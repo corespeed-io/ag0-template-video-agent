@@ -1,4 +1,3 @@
-import { Text, View } from "react-native";
 import { interpolate, useCurrentFrame } from "remotion";
 
 import { EASE_CLAMP } from "./components/Animations";
@@ -40,8 +39,8 @@ export const Reactive = () => {
 />`;
 
   return (
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: BG_COLOR2 }}>
-      <View
+    <div style={{ display: "flex", flex: 1, flexDirection: "row", backgroundColor: BG_COLOR2 }}>
+      <div
         style={{
           flex: 1,
           justifyContent: "center",
@@ -49,14 +48,14 @@ export const Reactive = () => {
           display: "flex",
         }}
       >
-        <View style={{ paddingLeft: 120 }}>
+        <div style={{ paddingLeft: 120 }}>
           <Code yOffset={0} source={source} minWidth={1800} />
-        </View>
-      </View>
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <View>
+        </div>
+      </div>
+      <div style={{ display: "flex", flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <div>
           <Logo color={color} />
-          <Text
+          <div
             style={{
               fontSize: 200,
               color: color,
@@ -66,9 +65,9 @@ export const Reactive = () => {
             }}
           >
             {text}
-          </Text>
-        </View>
-      </View>
-    </View>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };

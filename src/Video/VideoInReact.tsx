@@ -1,4 +1,3 @@
-import { View } from "react-native";
 import { AbsoluteFill, Sequence, useCurrentFrame } from "remotion";
 
 import { Code } from "./components/Code";
@@ -14,8 +13,9 @@ export const VideoInReact = () => {
 }`;
   return (
     <AbsoluteFill>
-      <View
+      <div
         style={{
+          display: "flex",
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
@@ -28,7 +28,7 @@ export const VideoInReact = () => {
           yOffset={0}
           fontSize={undefined}
         />
-      </View>
+      </div>
       <Sequence from={90}>
         <RemotionBlurredLogo />
       </Sequence>

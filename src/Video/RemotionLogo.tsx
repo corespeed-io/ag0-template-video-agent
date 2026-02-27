@@ -1,4 +1,3 @@
-import { Text, View } from "react-native";
 import { Img, staticFile } from "remotion";
 
 import { mix } from "./components/Animations";
@@ -12,21 +11,22 @@ interface RemotionLogoProps {
 
 export const RemotionLogo = ({ progress }: RemotionLogoProps) => {
   return (
-    <View
+    <div
       style={{
+        display: "flex",
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
         flexDirection: "row",
         opacity: progress,
-        transform: [{ translateY: mix(progress, -200, 0) }],
+        transform: `translateY(${mix(progress, -200, 0)}px)`,
       }}
     >
       <Img
         src={staticFile("/images/logo.png")}
         style={{ width: LOGO_WIDTH, height: LOGO_HEIGHT }}
       />
-      <Text
+      <span
         style={{
           marginLeft: 128,
           fontFamily: "SF Pro",
@@ -36,7 +36,7 @@ export const RemotionLogo = ({ progress }: RemotionLogoProps) => {
         }}
       >
         Remotion
-      </Text>
-    </View>
+      </span>
+    </div>
   );
 };

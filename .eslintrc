@@ -1,6 +1,6 @@
 {
   "plugins": ["@remotion"],
-  "extends": ["react-native-wcandillon"],
+  "extends": ["@remotion"],
   "parserOptions": {
     "project": "./tsconfig.json"
   },

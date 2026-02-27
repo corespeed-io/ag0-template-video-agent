@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import React from "react";
-import { View, StyleSheet } from "react-native";
 import { AbsoluteFill } from "remotion";
 
 import { CANVAS } from "../../Video/components/Canvas";
@@ -23,7 +22,7 @@ export const Container = ({ children }: ContainerProps) => {
           left: -300,
         }}
       >
-        <View
+        <div
           style={{
             width: 1080,
             height: 1920,
@@ -32,19 +31,23 @@ export const Container = ({ children }: ContainerProps) => {
           }}
         >
           {c1}
-        </View>
+        </div>
       </AbsoluteFill>
-      <View
+      <div
         style={{
-          ...StyleSheet.absoluteFillObject,
+          position: "absolute",
           left: center.x - 300,
+          right: 0,
+          top: 0,
+          bottom: 0,
           width: center.x,
+          display: "flex",
           justifyContent: "center",
           alignItems: "center",
         }}
       >
         {c2}
-      </View>
+      </div>
     </>
   );
 };

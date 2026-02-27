@@ -1,4 +1,3 @@
-import { View } from "react-native";
 import { interpolate, useCurrentFrame } from "remotion";
 const aspectRatio = 21 / 23;
 const width = 1080;
@@ -12,7 +11,7 @@ export const Logo = ({ color }: LogoProps) => {
   const frame = useCurrentFrame();
   const rotate = interpolate(frame, [0, 100], [0, Math.PI]);
   return (
-    <View style={{ transform: [{ rotate: `${rotate}rad` }] }}>
+    <div style={{ transform: `rotate(${rotate}rad)` }}>
       <svg
         width={width}
         height={height}
@@ -44,6 +43,6 @@ export const Logo = ({ color }: LogoProps) => {
           </clipPath>
         </defs>
       </svg>
-    </View>
+    </div>
   );
 };

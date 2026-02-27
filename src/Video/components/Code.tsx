@@ -1,5 +1,4 @@
 import {Highlight} from "prism-react-renderer";
-import { View } from "react-native";
 
 import { theme } from "./oneDark";
 
@@ -10,7 +9,7 @@ interface CircleProps {
 }
 
 const Circle = ({ color }: CircleProps) => (
-  <View
+  <div
     style={{
       backgroundColor: color,
       width: size,
@@ -35,8 +34,9 @@ export const Code = ({ source, fontSize, minWidth, yOffset }: CodeProps) => {
         transform: `translateY(${yOffset}px)`,
       }}
     >
-      <View
+      <div
         style={{
+          display: "flex",
           flexDirection: "row",
           padding: 50,
           backgroundColor: theme.plain.backgroundColor,
@@ -47,7 +47,7 @@ export const Code = ({ source, fontSize, minWidth, yOffset }: CodeProps) => {
         <Circle color="#FF5E57" />
         <Circle color="#FFBC30" />
         <Circle color="#29C93F" />
-      </View>
+      </div>
       <div
         style={{
           padding: 50,
