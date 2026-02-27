@@ -1,5 +1,5 @@
 {
-  "name": "ag0-template-remotion",
+  "name": "ag0-template-video-agent",
   "version": "1.0.0",
   "description": "My Remotion video",
   "scripts": {
@@ -9,6 +9,7 @@
     "build:sequence": "remotion render src/index.tsx Main out --sequence",
     "upgrade": "remotion upgrade",
     "server": "bun server.ts",
+    "agent": "deno run --allow-all --env-file agent/server.ts",
     "test": "eslint src --ext ts,tsx,js,jsx && tsc",
     "lint": "eslint --ext .ts,.tsx . --max-warnings 0",
     "tsc": "tsc"
@@ -24,6 +25,7 @@
     "@types/express": "^5.0.3",
     "@types/react": "^19.1.10",
     "@types/web": "^0.0.260",
+    "@zypher/agent": "npm:@jsr/zypher__agent",
     "abs-svg-path": "^0.1.1",
     "alea": "^1.0.1",
     "color": "^5.0.0",
@@ -40,7 +42,7 @@
     "simplex-noise": "^4.0.3",
     "styled-components": "^6.1.19",
     "svg-path-properties": "^2.0.0",
-"typescript": "^5.9.2",
+    "typescript": "^5.9.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
