@@ -1,7 +1,7 @@
 # This is a dockerized version of a server that you can easily deploy somewhere.
 # If you don't want server rendering, you can safely delete this file.
 
-FROM node:alpine
+FROM oven/bun:alpine
 
 # Installs latest Chromium (85) package.
 RUN apk add --no-cache \
@@ -18,13 +18,13 @@ RUN apk add --no-cache \
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
   PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-COPY package*.json ./
+COPY package.json bun.lock ./
 COPY tsconfig.json ./
 COPY src src
 COPY *.ts .
 COPY *.tsx .
 
-RUN npm i
+RUN bun install --frozen-lockfile
 
 # Add user so we don't need --no-sandbox.
 RUN addgroup -S pptruser && adduser -S -g pptruser pptruser \
@@ -36,4 +36,4 @@ USER pptruser
 
 EXPOSE 8000
 
-CMD ["npm", "run", "server"] 
+CMD ["bun", "run", "server"]
