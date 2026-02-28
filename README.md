@@ -1,48 +1,45 @@
-# Remotion video
+# ag0 Video Agent
 
-<p align="center">
-  <a href="https://github.com/JonnyBurger/remotion-logo">
-    <img src="https://github.com/JonnyBurger/remotion-logo/raw/main/withtitle/element-0.png">
-  </a>
-</p>
+An AI-powered video editing agent built on [Remotion](https://www.remotion.dev/), featuring a split-panel UI with a chat interface and live Remotion Studio preview.
 
-Welcome to your Remotion project!
+## Architecture
+
+- **Chat UI** (port 5173) — React 19 + Vite split-panel app
+- **Agent Server** (port 8080) — Deno + Hono SSE backend powered by Claude
+- **Remotion Studio** (port 3000) — Live video preview in an iframe
 
 ## Commands
 
-**Start Preview**
+### Start everything
 
 ```console
-npm start
+bun run dev:all
 ```
 
-**Render video**
+### Start individual services
 
 ```console
-npm run build
+bun run dev          # Remotion Studio (port 3000)
+bun run ui:dev       # Chat UI (port 5173)
+bun run agent:dev    # Agent server (port 8080)
 ```
 
-**Server render demo**
+### Update Remotion skills
 
 ```console
-npm run server
+bun run skills:update
 ```
 
-See [docs for server-side rendering](https://www.remotion.dev/docs/ssr) here.
-
-**Upgrade Remotion**
+### Render video
 
 ```console
-npm run upgrade
+bun run build
 ```
 
 ## Docs
 
-Get started with Remotion by reading the [fundamentals page](https://www.remotion.dev/docs/the-fundamentals).
-
-## Issues
-
-Found an issue with Remotion? [File an issue here](https://github.com/JonnyBurger/remotion/issues/new).
+- [Remotion fundamentals](https://www.remotion.dev/docs/the-fundamentals)
+- [Remotion server-side rendering](https://www.remotion.dev/docs/ssr)
 
 ## License
 
