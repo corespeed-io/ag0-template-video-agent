@@ -1,0 +1,9 @@
+{
+  "tasks": {
+    "start": "deno run --allow-all server.ts"
+  },
+  "imports": {
+    "hono": "npm:hono@4",
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk"
+  }
+}

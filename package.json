@@ -12,7 +12,11 @@
     "agent": "deno run --allow-all --env-file agent/server.ts",
     "test": "eslint src --ext ts,tsx,js,jsx && tsc",
     "lint": "eslint --ext .ts,.tsx . --max-warnings 0",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "skills:update": "git submodule update --remote agent/skills/remotion",
+    "ui:dev": "cd ui && bun install && bun run dev",
+    "agent:dev": "deno run --allow-all --env-file agent/server.ts",
+    "dev:all": "concurrently --names \"remotion,ui,agent\" \"bun run dev\" \"bun run ui:dev\" \"bun run agent:dev\""
   },
   "repository": {},
   "license": "UNLICENSED",
@@ -25,7 +29,6 @@
     "@types/express": "^5.0.3",
     "@types/react": "^19.1.10",
     "@types/web": "^0.0.260",
-    "@zypher/agent": "npm:@jsr/zypher__agent",
     "abs-svg-path": "^0.1.1",
     "alea": "^1.0.1",
     "color": "^5.0.0",
@@ -50,6 +53,7 @@
     "@types/lodash": "^4.17.20",
     "@types/react-dom": "^19.1.7",
     "@types/styled-components": "^5.1.34",
-    "@types/uuid": "^10.0.0"
+    "@types/uuid": "^10.0.0",
+    "concurrently": "^9.1.2"
   }
 }

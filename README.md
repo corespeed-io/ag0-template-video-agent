@@ -2,6 +2,8 @@
 
 An AI-powered video editing agent built on [Remotion](https://www.remotion.dev/), featuring a split-panel UI with a chat interface and live Remotion Studio preview.
 
+![alt text](image.png)
+
 ## Architecture
 
 - **Chat UI** (port 5173) — React 19 + Vite split-panel app
