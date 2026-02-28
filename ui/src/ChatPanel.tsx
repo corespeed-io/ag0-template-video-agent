@@ -62,6 +62,7 @@ export default function ChatPanel() {
   const [anthropicHistory, setAnthropicHistory] = useState<AnthropicMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Load chats on mount, auto-select most recent
   useEffect(() => {
@@ -81,7 +82,14 @@ export default function ChatPanel() {
     }
   }, [messages]);
 
+  const stopStreaming = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setIsStreaming(false);
+  }, []);
+
   const loadChat = useCallback(async (chatId: string) => {
+    stopStreaming();
     setActiveChatId(chatId);
     setMessages([]);
     setAnthropicHistory([]);
@@ -91,16 +99,16 @@ export default function ChatPanel() {
       setMessages(saved);
       setAnthropicHistory(history);
     } catch {}
-  }, []);
+  }, [stopStreaming]);
 
   const newChat = useCallback(() => {
-    // Just clear state — chat row is created on first message send
+    stopStreaming();
     setActiveChatId(null);
     setMessages([]);
     setAnthropicHistory([]);
     setInput("");
     textareaRef.current?.focus();
-  }, []);
+  }, [stopStreaming]);
 
   const deleteChat = useCallback(
     async (chatId: string, e: MouseEvent) => {
@@ -153,6 +161,8 @@ export default function ChatPanel() {
     ];
 
     setIsStreaming(true);
+    const abort = new AbortController();
+    abortRef.current = abort;
 
     const assistantContentBlocks: AnthropicContent[] = [];
     const toolResults: AnthropicContent[] = [];
@@ -162,6 +172,7 @@ export default function ChatPanel() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chatId, messages: newHistory }),
+        signal: abort.signal,
       });
 
       if (!res.ok || !res.body) {
@@ -279,6 +290,7 @@ export default function ChatPanel() {
         },
       ]);
     } finally {
+      abortRef.current = null;
       setIsStreaming(false);
     }
   }, [input, isStreaming, anthropicHistory, activeChatId]);

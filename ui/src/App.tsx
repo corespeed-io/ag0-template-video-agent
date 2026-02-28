@@ -28,6 +28,7 @@ export default function App() {
             height: "100%",
           }}
           title="Remotion Studio"
+          allow="autoplay; fullscreen"
         />
       </div>
     </div>
