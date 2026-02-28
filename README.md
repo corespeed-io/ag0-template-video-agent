@@ -6,9 +6,9 @@ An AI-powered video editing agent built on [Remotion](https://www.remotion.dev/)
 
 ## Architecture
 
-- **Chat UI** (port 5173) — React 19 + Vite split-panel app
-- **Agent Server** (port 8080) — Deno + Hono SSE backend powered by Claude
-- **Remotion Studio** (port 3000) — Live video preview in an iframe
+- **Chat UI** (port 5173) — React 19 + Vite split-panel app (`ui/`)
+- **Agent Server** (port 8080) — Deno + Hono SSE backend powered by Claude (`api/`)
+- **Remotion Studio** (port 3000) — Live video preview in an iframe (`remotion/`)
 
 ## Commands
 
@@ -21,9 +21,9 @@ bun run dev:all
 ### Start individual services
 
 ```console
-bun run dev          # Remotion Studio (port 3000)
-bun run ui:dev       # Chat UI (port 5173)
-bun run agent:dev    # Agent server (port 8080)
+cd remotion && bun run dev   # Remotion Studio (port 3000)
+cd ui && pnpm dev            # Chat UI (port 5173)
+deno task dev                # Agent server (port 8080)
 ```
 
 ### Update Remotion skills
@@ -35,7 +35,7 @@ bun run skills:update
 ### Render video
 
 ```console
-bun run build
+cd remotion && bun run build
 ```
 
 ## Docs

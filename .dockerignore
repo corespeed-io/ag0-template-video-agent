@@ -1,1 +1,11 @@
 node_modules
+remotion/node_modules
+ui/node_modules
+.git
+.env
+data/
+agent/skills/
+remotion/server.ts
+out/
+*.mp4
+*.mov

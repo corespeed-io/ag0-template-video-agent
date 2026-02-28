@@ -1,0 +1,43 @@
+// AG0 Process Manager Configuration
+//
+// Defines child processes that the AG0 Core API spawns and supervises.
+// Each entry creates a ManagedProcess with output logged to /logs/<label>.jsonl.
+//
+// Fields:
+//   command  (required)  — executable to run
+//   args     (optional)  — command arguments
+//   cwd      (optional)  — working directory (default: /workspace)
+//   env      (optional)  — environment variables
+//   logFile  (optional)  — log file path (default: /logs/<label>.jsonl)
+//   setup    (optional)  — shell commands that must succeed before process starts
+{
+  "processes": {
+    // User backend server (Hono + Zypher Agent)
+    "backend": {
+      "command": "deno",
+      "args": ["run", "--watch=api", "-A", "/workspace/main.ts"],
+      "env": {
+        "PORT": "8080",
+        "VITE_PORT": "5173",
+        "REMOTION_PORT": "3000"
+      }
+    },
+    // Frontend dev server (Vite + React via pnpm)
+    "frontend": {
+      "command": "pnpm",
+      "args": ["dev"],
+      "cwd": "/workspace/ui",
+      "env": {
+        "VITE_REMOTION_URL": "/remotion"
+      },
+      "setup": ["pnpm install"]
+    },
+    // Remotion Studio — video composition editor (port 3000, embedded as iframe)
+    "remotion-studio": {
+      "command": "bun",
+      "args": ["run", "dev"],
+      "cwd": "/workspace/remotion",
+      "setup": ["bun install"]
+    }
+  }
+}

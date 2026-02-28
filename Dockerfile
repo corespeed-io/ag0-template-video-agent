@@ -1,39 +1,48 @@
-# This is a dockerized version of a server that you can easily deploy somewhere.
-# If you don't want server rendering, you can safely delete this file.
+# ================================
+# Stage 1 — Build chat UI (pnpm)
+# ================================
+FROM node:24-slim AS frontend-build
+RUN corepack enable
+WORKDIR /app/ui
+# Install deps first for better layer caching
+COPY ui/package.json ui/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY ui/ ./
+RUN pnpm build
 
-FROM oven/bun:alpine
-
-# Installs latest Chromium (85) package.
-RUN apk add --no-cache \
-  chromium \
-  nss \
-  freetype \
-  freetype-dev \
-  harfbuzz \
-  ca-certificates \
-  ttf-freefont \
-  ffmpeg
-
-# Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-  PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
-COPY package.json bun.lock ./
-COPY tsconfig.json ./
-COPY src src
-COPY *.ts .
-COPY *.tsx .
-
+# ================================
+# Stage 2 — Install Remotion deps (bun)
+# ================================
+FROM oven/bun:1-slim AS remotion-deps
+WORKDIR /app/remotion
+COPY remotion/package.json remotion/bun.lock ./
 RUN bun install --frozen-lockfile
 
-# Add user so we don't need --no-sandbox.
-RUN addgroup -S pptruser && adduser -S -g pptruser pptruser \
-  && mkdir -p /home/pptruser/Downloads /app \
-  && chown -R pptruser:pptruser /home/pptruser \
-  && chown -R pptruser:pptruser /app
-# Run everything after as non-privileged user.
-USER pptruser
+# ================================
+# Stage 3 — Production runtime (Deno + bun)
+# ================================
+FROM denoland/deno:2.6.9
+WORKDIR /app
 
-EXPOSE 8000
+# Copy bun binary so the agent can run Remotion CLI commands
+COPY --from=remotion-deps /usr/local/bin/bun /usr/local/bin/bun
 
-CMD ["bun", "run", "server"]
+# Cache Deno deps before copying source for better layer caching
+COPY deno.json deno.lock ./
+RUN deno install
+
+# Backend source
+COPY main.ts ./
+COPY api/ ./api/
+
+# Remotion source + config + Node deps
+COPY remotion/src/ ./remotion/src/
+COPY remotion/public/ ./remotion/public/
+COPY remotion/remotion.config.ts remotion/tsconfig.json remotion/package.json ./remotion/
+COPY --from=remotion-deps /app/remotion/node_modules ./remotion/node_modules
+
+# Copy built chat UI from stage 1
+COPY --from=frontend-build /app/ui/dist ./ui/dist
+
+EXPOSE 8080
+CMD ["deno", "run", "--allow-all", "main.ts"]
