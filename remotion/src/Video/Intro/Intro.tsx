@@ -147,7 +147,7 @@ export const Intro: FC<{ frame: number }> = ({ frame }) => {
               clName="sc-fotOHu"
               enabled={secondEnabled}
             >
-              <Text>React</Text>
+              <Text>Agent0</Text>
             </FakeDevTools>
           </div>
         </ZIndex1>

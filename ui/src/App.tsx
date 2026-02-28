@@ -146,7 +146,7 @@ function ChatUI() {
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="border-t p-4">
+      <div className="p-4">
         <PromptInput onSubmit={handleSubmit}>
           <PromptInputTextarea disabled={isTaskRunning} />
           <PromptInputFooter>
