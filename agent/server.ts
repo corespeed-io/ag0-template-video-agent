@@ -8,6 +8,7 @@ import { cors } from "hono/cors";
 import Anthropic from "@anthropic-ai/sdk";
 import * as path from "https://deno.land/std@0.224.0/path/mod.ts";
 import { ensureDir } from "https://deno.land/std@0.224.0/fs/mod.ts";
+import { Database } from "@db/sqlite";
 
 const PORT = 8080;
 const PROJECT_ROOT = path.join(path.fromFileUrl(import.meta.url), "..", "..");
@@ -202,6 +203,46 @@ async function executeTool(
 
 // Main server
 async function main() {
+  // Setup SQLite DB
+  const DATA_DIR = path.join(PROJECT_ROOT, "data");
+  await ensureDir(DATA_DIR);
+  const db = new Database(path.join(DATA_DIR, "chats.db"));
+  db.exec(`PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;`);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS chats (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY,
+      chat_id TEXT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+      data TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_messages_chat ON messages(chat_id, created_at);
+    CREATE TABLE IF NOT EXISTS history (
+      chat_id TEXT PRIMARY KEY REFERENCES chats(id) ON DELETE CASCADE,
+      data TEXT NOT NULL
+    );
+  `);
+
+  function saveMessage(chatId: string, msg: Record<string, unknown>) {
+    db.prepare("INSERT INTO messages (id, chat_id, data, created_at) VALUES (?, ?, ?, ?)")
+      .run(crypto.randomUUID(), chatId, JSON.stringify(msg), new Date().toISOString());
+  }
+
+  function saveHistory(chatId: string, history: Anthropic.MessageParam[]) {
+    db.prepare("INSERT OR REPLACE INTO history (chat_id, data) VALUES (?, ?)")
+      .run(chatId, JSON.stringify(history));
+  }
+
+  function touchChat(chatId: string) {
+    db.prepare("UPDATE chats SET updated_at = ? WHERE id = ?")
+      .run(new Date().toISOString(), chatId);
+  }
+
   console.log("Loading Remotion skills...");
   const skillsContent = await loadSkills();
   const skillsLoaded = skillsContent.length > 0;
@@ -227,7 +268,7 @@ ${skillsLoaded ? `=== Remotion Skills ===\n\n${skillsContent}` : ""}`.trim();
     "*",
     cors({
       origin: "*",
-      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
       allowHeaders: ["Content-Type"],
     })
   );
@@ -235,13 +276,63 @@ ${skillsLoaded ? `=== Remotion Skills ===\n\n${skillsContent}` : ""}`.trim();
   // Health check
   app.get("/health", (c) => c.json({ status: "ok" }));
 
+  // List all chats
+  app.get("/chats", (c) => {
+    const chats = db
+      .prepare("SELECT * FROM chats ORDER BY updated_at DESC")
+      .all<{ id: string; title: string; created_at: string; updated_at: string }>();
+    return c.json({ chats });
+  });
+
+  // Create a new chat
+  app.post("/chats", async (c) => {
+    const { title } = await c.req.json<{ title: string }>();
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    db.prepare("INSERT INTO chats (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)")
+      .run(id, title || "New Chat", now, now);
+    return c.json({ chat: { id, title: title || "New Chat", created_at: now, updated_at: now } }, 201);
+  });
+
+  // Get messages + history for a chat
+  app.get("/chats/:id", (c) => {
+    const chatId = c.req.param("id");
+    const msgs = db
+      .prepare("SELECT data FROM messages WHERE chat_id = ? ORDER BY created_at")
+      .all<{ data: string }>(chatId);
+    const histRow = db
+      .prepare("SELECT data FROM history WHERE chat_id = ?")
+      .get<{ data: string }>(chatId);
+    return c.json({
+      messages: msgs.map((r) => JSON.parse(r.data)),
+      history: histRow ? JSON.parse(histRow.data) : [],
+    });
+  });
+
+  // Delete a chat (cascades to messages + history)
+  app.delete("/chats/:id", (c) => {
+    const chatId = c.req.param("id");
+    db.prepare("DELETE FROM chats WHERE id = ?").run(chatId);
+    return c.json({ ok: true });
+  });
+
+  // Update chat title
+  app.patch("/chats/:id/title", async (c) => {
+    const chatId = c.req.param("id");
+    const { title } = await c.req.json<{ title: string }>();
+    db.prepare("UPDATE chats SET title = ?, updated_at = ? WHERE id = ?")
+      .run(title, new Date().toISOString(), chatId);
+    return c.json({ ok: true });
+  });
+
   // Chat endpoint — SSE stream
   app.post("/chat", async (c) => {
     const body = await c.req.json<{
+      chatId: string;
       messages: Anthropic.MessageParam[];
     }>();
 
-    const { messages } = body;
+    const { chatId, messages } = body;
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -253,6 +344,12 @@ ${skillsLoaded ? `=== Remotion Skills ===\n\n${skillsContent}` : ""}`.trim();
         }
 
         try {
+          // Save the new user message (last item in the incoming history)
+          const lastMsg = messages[messages.length - 1];
+          if (lastMsg?.role === "user" && typeof lastMsg.content === "string") {
+            saveMessage(chatId, { role: "user", type: "text", text: lastMsg.content });
+          }
+
           // Mutable copy to accumulate messages through tool loops
           const conversationMessages: Anthropic.MessageParam[] = [...messages];
 
@@ -273,6 +370,7 @@ ${skillsLoaded ? `=== Remotion Skills ===\n\n${skillsContent}` : ""}`.trim();
               if (block.type === "text") {
                 hasText = true;
                 send({ type: "text", text: block.text });
+                saveMessage(chatId, { role: "assistant", type: "text", text: block.text });
               } else if (block.type === "tool_use") {
                 send({
                   type: "tool_use",
@@ -280,6 +378,7 @@ ${skillsLoaded ? `=== Remotion Skills ===\n\n${skillsContent}` : ""}`.trim();
                   name: block.name,
                   input: block.input,
                 });
+                saveMessage(chatId, { role: "assistant", type: "tool_use", id: block.id, name: block.name, input: block.input });
               }
             }
 
@@ -320,6 +419,7 @@ ${skillsLoaded ? `=== Remotion Skills ===\n\n${skillsContent}` : ""}`.trim();
                     name: block.name,
                     output,
                   });
+                  saveMessage(chatId, { role: "assistant", type: "tool_result", id: block.id, name: block.name, output });
 
                   toolResults.push({
                     type: "tool_result",
@@ -346,6 +446,8 @@ ${skillsLoaded ? `=== Remotion Skills ===\n\n${skillsContent}` : ""}`.trim();
             break;
           }
 
+          saveHistory(chatId, conversationMessages);
+          touchChat(chatId);
           send({ type: "done" });
         } catch (err) {
           console.error("Agent error:", err);
@@ -371,8 +473,12 @@ ${skillsLoaded ? `=== Remotion Skills ===\n\n${skillsContent}` : ""}`.trim();
 
   console.log(`\nAgent server running on http://localhost:${PORT}`);
   console.log("Endpoints:");
-  console.log(`  GET  http://localhost:${PORT}/health`);
-  console.log(`  POST http://localhost:${PORT}/chat\n`);
+  console.log(`  GET    http://localhost:${PORT}/health`);
+  console.log(`  GET    http://localhost:${PORT}/chats`);
+  console.log(`  POST   http://localhost:${PORT}/chats`);
+  console.log(`  GET    http://localhost:${PORT}/chats/:id`);
+  console.log(`  DELETE http://localhost:${PORT}/chats/:id`);
+  console.log(`  POST   http://localhost:${PORT}/chat\n`);
 
   Deno.serve({ port: PORT }, app.fetch);
 }

@@ -4,6 +4,7 @@
   },
   "imports": {
     "hono": "npm:hono@4",
-    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk"
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk",
+    "@db/sqlite": "jsr:@db/sqlite@^0.13"
   }
 }
