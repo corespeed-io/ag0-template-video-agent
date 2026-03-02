@@ -48,11 +48,7 @@ const client = new TaskApiClient({
 
 // Remotion Studio URL — set VITE_REMOTION_URL at build/dev time to enable the
 // split-panel layout. Undefined in production (Railway) hides the right panel.
-// Guard against iframe recursion: never show the panel when already embedded.
-const remotionUrl =
-  window.self === window.top
-    ? (import.meta.env.VITE_REMOTION_URL as string | undefined)
-    : undefined;
+const remotionUrl = import.meta.env.VITE_REMOTION_URL as string | undefined;
 
 function App() {
   return (
