@@ -48,7 +48,12 @@ const client = new TaskApiClient({
 
 // Remotion Studio URL — set VITE_REMOTION_URL at build/dev time to enable the
 // split-panel layout. Undefined in production (Railway) hides the right panel.
-const remotionUrl = import.meta.env.VITE_REMOTION_URL as string | undefined;
+// Guard against infinite embedding: if this page was loaded from the /remotion
+// path it means Remotion Studio isn't running and the proxy fell back to the
+// chat UI — don't embed again.
+const remotionUrl = !window.location.pathname.startsWith("/remotion")
+  ? (import.meta.env.VITE_REMOTION_URL as string | undefined)
+  : undefined;
 
 function App() {
   return (
