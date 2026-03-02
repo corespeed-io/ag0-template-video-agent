@@ -2,6 +2,6 @@
   "name": "Video Agent",
   "description": "AI agent for creating and editing Remotion video compositions",
   "model": "anthropic/claude-sonnet-4-5-20250929",
-  "previewPath": "/remotion",
+  "previewPort": 3000,
   "mcpServers": {}
 }
