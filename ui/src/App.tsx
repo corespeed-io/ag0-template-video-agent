@@ -1,5 +1,4 @@
 import { Trash2Icon } from "lucide-react";
-import { cn } from "@/lib/utils.ts";
 import {
   Conversation,
   ConversationContent,
@@ -46,38 +45,11 @@ const client = new TaskApiClient({
     new URL("/api/agent", window.location.origin).toString(),
 });
 
-// Remotion Studio URL — set VITE_REMOTION_URL at build/dev time to enable the
-// split-panel layout. Undefined in production (Railway) hides the right panel.
-// Guard against infinite embedding: if this page was loaded from the /remotion
-// path it means Remotion Studio isn't running and the proxy fell back to the
-// chat UI — don't embed again.
-const remotionUrl = !window.location.pathname.startsWith("/remotion")
-  ? (import.meta.env.VITE_REMOTION_URL as string | undefined)
-  : undefined;
-
 function App() {
   return (
     <AgentProvider client={client}>
       <div className="flex h-screen w-full overflow-hidden">
-        {/* Left panel: Agent chat */}
-        <div
-          className={cn(
-            "flex flex-col min-w-80",
-            remotionUrl ? "w-[420px] border-r" : "flex-1",
-          )}
-        >
-          <ChatUI />
-        </div>
-
-        {/* Right panel: Remotion Studio preview (dev/AG0 only) */}
-        {remotionUrl && (
-          <iframe
-            src={remotionUrl}
-            className="flex-1 border-none"
-            title="Remotion Studio"
-            allow="autoplay; fullscreen"
-          />
-        )}
+        <ChatUI />
       </div>
     </AgentProvider>
   );
