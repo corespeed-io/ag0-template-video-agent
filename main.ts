@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { serveStatic } from "hono/deno";
 import { join } from "@std/path";
 import { parsePort } from "@zypher/utils/env";
@@ -10,6 +11,7 @@ async function main(): Promise<void> {
   await setupLogging();
 
   const app = new Hono()
+    .use("*", cors())
     .route("/api", api)
     .get("/health", (c) => c.json({ status: "ok" }));
 
