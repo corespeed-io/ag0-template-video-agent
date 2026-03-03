@@ -15,30 +15,45 @@
     // User backend server (Hono + Zypher Agent)
     "backend": {
       "command": "deno",
-      "args": ["run", "--watch=api", "-A", "/workspace/main.ts"],
+      "args": [
+        "run",
+        "--watch=api",
+        "-A",
+        "/workspace/main.ts"
+      ],
       "env": {
         "PORT": "8080",
         "VITE_PORT": "5173",
         "REMOTION_PORT": "3000"
       },
-      "setup": ["deno install --entrypoint /workspace/main.ts"]
+      "setup": [
+        "deno install --entrypoint /workspace/main.ts"
+      ]
     },
     // Frontend dev server (Vite + React via pnpm)
     "frontend": {
       "command": "pnpm",
-      "args": ["dev"],
+      "args": [
+        "dev"
+      ],
       "cwd": "/workspace/ui",
       "env": {
         "VITE_REMOTION_URL": "/remotion"
       },
-      "setup": ["pnpm install"]
+      "setup": [
+        "pnpm install"
+      ]
     },
     // Remotion Studio — video composition editor (port 3000, embedded as iframe)
     "remotion-studio": {
-      "command": "bun",
-      "args": ["run", "dev"],
+      "command": "pnpm",
+      "args": [
+        "dev"
+      ],
       "cwd": "/workspace/remotion",
-      "setup": ["bun install"]
+      "setup": [
+        "pnpm install"
+      ]
     }
   }
 }
