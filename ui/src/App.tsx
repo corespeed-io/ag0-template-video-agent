@@ -152,12 +152,10 @@ function ChatUI() {
 // ---------------------------------------------------------------------------
 
 function MessageBlock({ message }: { message: CompleteMessage }) {
-  // Hide user messages that have no visible content (e.g. pure image_url blocks)
+  // Hide user messages that only contain tool results (system-generated)
   if (message.role === "user") {
-    const hasVisible = message.content.some(
-      (b) => b.type === "text" || b.type === "tool_result",
-    );
-    if (!hasVisible) return null;
+    const hasText = message.content.some((b) => b.type === "text");
+    if (!hasText) return null;
   }
 
   return (
