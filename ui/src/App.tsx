@@ -45,9 +45,6 @@ const client = new TaskApiClient({
     new URL("/api/agent", window.location.origin).toString(),
 });
 
-const remotionUrl =
-  import.meta.env.VITE_REMOTION_URL ?? "http://localhost:3000";
-
 function App() {
   return (
     <AgentProvider client={client}>
@@ -57,7 +54,7 @@ function App() {
         </div>
         <div className="flex-1">
           <iframe
-            src={remotionUrl}
+            src={"/remotion"}
             className="w-full h-full border-none"
             title="Remotion Studio"
           />
