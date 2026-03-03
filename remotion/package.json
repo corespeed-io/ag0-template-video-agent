@@ -8,7 +8,7 @@
     "build": "remotion render src/index.tsx Main out.mov",
     "build:sequence": "remotion render src/index.tsx Main out --sequence",
     "upgrade": "remotion upgrade",
-    "server": "bun server.ts"
+    "server": "npx tsx server.ts"
   },
   "repository": {},
   "license": "UNLICENSED",
@@ -45,6 +45,7 @@
     "@types/lodash": "^4.17.20",
     "@types/react-dom": "^19.1.7",
     "@types/styled-components": "^5.1.34",
-    "@types/uuid": "^10.0.0"
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.21.0"
   }
 }

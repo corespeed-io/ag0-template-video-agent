@@ -15,13 +15,13 @@ An AI-powered video editing agent built on [Remotion](https://www.remotion.dev/)
 ### Start everything
 
 ```console
-bun run dev:all
+pnpm run dev:all
 ```
 
 ### Start individual services
 
 ```console
-cd remotion && bun run dev   # Remotion Studio (port 3000)
+cd remotion && pnpm dev      # Remotion Studio (port 3000)
 cd ui && pnpm dev            # Chat UI (port 5173)
 deno task dev                # Agent server (port 8080)
 ```
@@ -29,13 +29,13 @@ deno task dev                # Agent server (port 8080)
 ### Update Remotion skills
 
 ```console
-bun run skills:update
+pnpm run skills:update
 ```
 
 ### Render video
 
 ```console
-cd remotion && bun run build
+cd remotion && pnpm run build
 ```
 
 ## Docs
