@@ -16,14 +16,11 @@ async function main(): Promise<void> {
     .get("/health", (c) => c.json({ status: "ok" }));
 
   // Proxy Remotion Studio through a single port so the iframe works in AG0/dev.
-  // Only enabled when REMOTION_PORT is set — skipped in production (e.g. Railway).
-  const remotionPort = Deno.env.get("REMOTION_PORT");
-  if (remotionPort) {
-    app.all(
-      "/remotion{/*}",
-      proxy(`http://localhost:${remotionPort}`, { stripPrefix: "/remotion" }),
-    );
-  }
+  const remotionPort = parsePort(Deno.env.get("REMOTION_PORT"), 3000);
+  app.all(
+    "/remotion{/*}",
+    proxy(`http://localhost:${remotionPort}`, { stripPrefix: "/remotion" }),
+  );
 
   const vitePort = Deno.env.get("VITE_PORT");
   if (vitePort) {
