@@ -19,7 +19,7 @@ async function main(): Promise<void> {
   // The main page loads at /remotion/ (prefix-stripped), but Remotion's HTML uses
   // absolute root paths (/bundle.js, /static-*, /api/*, /events, /stream) so we
   // also proxy those specific paths to Remotion Studio.
-  const remotionPort = parsePort(Deno.env.get("REMOTION_PORT"), 4111);
+  const remotionPort = parsePort(Deno.env.get("REMOTION_PORT"), 4321);
   const remotionProxy = proxy(`http://localhost:${remotionPort}`);
   app.all(
     "/remotion/*",
@@ -40,6 +40,44 @@ async function main(): Promise<void> {
   app.all("/static-:hash/*", remotionProxy);
   app.all("/outputs-:hash/*", remotionProxy);
   app.all("/api/*", remotionProxy);
+
+  // Serve the Remotion bundle so the remote render server can fetch it.
+  // Request: /remotion-bundle/bundle.js → file: ./remotion/bundle/bundle.js
+  app.get("/remotion-bundle/*", async (c) => {
+    const subPath = c.req.path.replace(/^\/remotion-bundle\//, "");
+    const filePath = join("remotion", "bundle", subPath);
+    try {
+      const file = await Deno.readFile(filePath);
+      const ext = subPath.split(".").pop() ?? "";
+      const mimeTypes: Record<string, string> = {
+        html: "text/html",
+        js: "application/javascript",
+        css: "text/css",
+        json: "application/json",
+        png: "image/png",
+        jpg: "image/jpeg",
+        svg: "image/svg+xml",
+        ico: "image/x-icon",
+        wasm: "application/wasm",
+        map: "application/json",
+      };
+      return c.body(file, 200, {
+        "Content-Type": mimeTypes[ext] ?? "application/octet-stream",
+      });
+    } catch {
+      return c.notFound();
+    }
+  });
+
+  // Serve rendered video output files (streamed, with proper MIME types).
+  // Request: /out/Main-123.mp4 → file: ./remotion/out/Main-123.mp4
+  app.use(
+    "/out/*",
+    serveStatic({
+      root: "./remotion/out",
+      rewriteRequestPath: (path: string) => path.replace(/^\/out/, ""),
+    }),
+  );
 
   const vitePort = Deno.env.get("VITE_PORT");
   if (vitePort) {
