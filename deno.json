@@ -19,5 +19,6 @@
     "ui",
     "agent",
     "remotion"
-  ]
+  ],
+  "nodeModulesDir": "auto"
 }

@@ -45,9 +45,6 @@ const client = new TaskApiClient({
     new URL("/api/agent", window.location.origin).toString(),
 });
 
-const remotionUrl =
-  import.meta.env.VITE_REMOTION_URL ?? "http://localhost:3000";
-
 function App() {
   return (
     <AgentProvider client={client}>
@@ -57,7 +54,7 @@ function App() {
         </div>
         <div className="flex-1">
           <iframe
-            src={remotionUrl}
+            src={import.meta.env.VITE_REMOTION_URL ?? "/remotion/Main"}
             className="w-full h-full border-none"
             title="Remotion Studio"
           />
@@ -152,12 +149,10 @@ function ChatUI() {
 // ---------------------------------------------------------------------------
 
 function MessageBlock({ message }: { message: CompleteMessage }) {
-  // Hide user messages that have no visible content (e.g. pure image_url blocks)
+  // Hide user messages that only contain tool results (system-generated)
   if (message.role === "user") {
-    const hasVisible = message.content.some(
-      (b) => b.type === "text" || b.type === "tool_result",
-    );
-    if (!hasVisible) return null;
+    const hasText = message.content.some((b) => b.type === "text");
+    if (!hasText) return null;
   }
 
   return (

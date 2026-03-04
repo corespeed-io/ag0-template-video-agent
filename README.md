@@ -1,27 +1,31 @@
 # ag0 Video Agent
 
-An AI-powered video editing agent built on [Remotion](https://www.remotion.dev/), featuring a split-panel UI with a chat interface and live Remotion Studio preview.
+An AI-powered video editing agent built on
+[Remotion](https://www.remotion.dev/), featuring a split-panel UI with a chat
+interface and live Remotion Studio preview.
 
 ![alt text](image.png)
 
 ## Architecture
 
 - **Chat UI** (port 5173) — React 19 + Vite split-panel app (`ui/`)
-- **Agent Server** (port 8080) — Deno + Hono SSE backend powered by Claude (`api/`)
-- **Remotion Studio** (port 3000) — Live video preview in an iframe (`remotion/`)
+- **Agent Server** (port 8080) — Deno + Hono SSE backend powered by Claude
+  (`api/`)
+- **Remotion Studio** (port 4111) — Live video preview in an iframe
+  (`remotion/`)
 
 ## Commands
 
 ### Start everything
 
 ```console
-bun run dev:all
+pnpm run dev:all
 ```
 
 ### Start individual services
 
 ```console
-cd remotion && bun run dev   # Remotion Studio (port 3000)
+cd remotion && pnpm dev      # Remotion Studio (port 4111)
 cd ui && pnpm dev            # Chat UI (port 5173)
 deno task dev                # Agent server (port 8080)
 ```
@@ -29,13 +33,13 @@ deno task dev                # Agent server (port 8080)
 ### Update Remotion skills
 
 ```console
-bun run skills:update
+pnpm run skills:update
 ```
 
 ### Render video
 
 ```console
-cd remotion && bun run build
+cd remotion && pnpm run build
 ```
 
 ## Docs
@@ -45,4 +49,5 @@ cd remotion && bun run build
 
 ## License
 
-Notice that for some entities a company license is needed. Read [the terms here](https://github.com/JonnyBurger/remotion/blob/main/LICENSE.md).
+Notice that for some entities a company license is needed. Read
+[the terms here](https://github.com/JonnyBurger/remotion/blob/main/LICENSE.md).

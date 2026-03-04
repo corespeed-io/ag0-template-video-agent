@@ -12,33 +12,56 @@
 //   setup    (optional)  — shell commands that must succeed before process starts
 {
   "processes": {
+    // Install Chrome Headless Shell dependencies for Remotion rendering
+    "install-deps": {
+      "command": "bash",
+      "args": [
+        "-c",
+        "export DEBIAN_FRONTEND=noninteractive && sudo -E apt-get update && sudo -E apt-get install -y libnss3 libdbus-1-3 libatk1.0-0 libasound2 libxrandr2 libxkbcommon-dev libxfixes3 libxcomposite1 libxdamage1 libgbm-dev libcups2 libcairo2 libpango-1.0-0 libatk-bridge2.0-0"
+      ]
+    },
     // User backend server (Hono + Zypher Agent)
     "backend": {
       "command": "deno",
-      "args": ["run", "--watch=api", "-A", "/workspace/main.ts"],
+      "args": [
+        "run",
+        "--watch=api",
+        "-A",
+        "/workspace/main.ts"
+      ],
       "env": {
         "PORT": "8080",
         "VITE_PORT": "5173",
-        "REMOTION_PORT": "3000"
+        "REMOTION_PORT": "4111"
       },
-      "setup": ["deno install --entrypoint /workspace/main.ts"]
+      "setup": [
+        "deno install --entrypoint /workspace/main.ts"
+      ]
     },
     // Frontend dev server (Vite + React via pnpm)
     "frontend": {
       "command": "pnpm",
-      "args": ["dev"],
+      "args": [
+        "dev"
+      ],
       "cwd": "/workspace/ui",
       "env": {
-        "VITE_REMOTION_URL": "/remotion"
+        "VITE_REMOTION_URL": "/remotion/Main"
       },
-      "setup": ["pnpm install"]
+      "setup": [
+        "pnpm install"
+      ]
     },
-    // Remotion Studio — video composition editor (port 3000, embedded as iframe)
+    // Remotion Studio — video composition editor (port 4111, embedded as iframe)
     "remotion-studio": {
-      "command": "bun",
-      "args": ["run", "dev"],
+      "command": "pnpm",
+      "args": [
+        "dev"
+      ],
       "cwd": "/workspace/remotion",
-      "setup": ["bun install"]
+      "setup": [
+        "pnpm install"
+      ]
     }
   }
 }

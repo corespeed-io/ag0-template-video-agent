@@ -5,8 +5,8 @@
   "scripts": {
     "skills:update": "git submodule update --remote agent/skills/remotion",
     "ui:dev": "cd ui && pnpm install && pnpm dev",
-    "agent:dev": "VITE_PORT=5173 REMOTION_PORT=3000 deno run --allow-all --env main.ts",
-    "dev:all": "concurrently --names \"remotion,ui,agent\" \"cd remotion && bun run dev\" \"bun run ui:dev\" \"bun run agent:dev\""
+    "agent:dev": "VITE_PORT=5173 deno run --allow-all --env main.ts",
+    "dev:all": "concurrently --names \"remotion,ui,agent\" \"cd remotion && pnpm dev\" \"pnpm run ui:dev\" \"pnpm run agent:dev\""
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

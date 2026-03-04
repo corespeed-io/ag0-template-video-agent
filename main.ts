@@ -16,14 +16,30 @@ async function main(): Promise<void> {
     .get("/health", (c) => c.json({ status: "ok" }));
 
   // Proxy Remotion Studio through a single port so the iframe works in AG0/dev.
-  // Only enabled when REMOTION_PORT is set — skipped in production (e.g. Railway).
-  const remotionPort = Deno.env.get("REMOTION_PORT");
-  if (remotionPort) {
-    app.all(
-      "/remotion{/*}",
-      proxy(`http://localhost:${remotionPort}`, { stripPrefix: "/remotion" }),
-    );
-  }
+  // The main page loads at /remotion/ (prefix-stripped), but Remotion's HTML uses
+  // absolute root paths (/bundle.js, /static-*, /api/*, /events, /stream) so we
+  // also proxy those specific paths to Remotion Studio.
+  const remotionPort = parsePort(Deno.env.get("REMOTION_PORT"), 4111);
+  const remotionProxy = proxy(`http://localhost:${remotionPort}`);
+  app.all(
+    "/remotion/*",
+    proxy(`http://localhost:${remotionPort}`, { stripPrefix: "/remotion" }),
+  );
+  // Remotion Studio uses hardcoded absolute root paths (no --base-path support). Proxy those specific paths to ensure the studio works correctly when embedded in AG0/dev.
+  for (
+    const p of [
+      "/bundle.js",
+      "/__webpack_hmr",
+      "/events",
+      "/stream",
+      "/favicon.ico",
+      "/beep.wav",
+      "/source-map-helper.wasm",
+    ]
+  ) app.all(p, remotionProxy);
+  app.all("/static-:hash/*", remotionProxy);
+  app.all("/outputs-:hash/*", remotionProxy);
+  app.all("/api/*", remotionProxy);
 
   const vitePort = Deno.env.get("VITE_PORT");
   if (vitePort) {
@@ -42,4 +58,3 @@ async function main(): Promise<void> {
 if (import.meta.main) {
   main();
 }
-  
