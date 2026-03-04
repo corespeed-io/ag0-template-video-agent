@@ -9,6 +9,7 @@
 import path from "path";
 import fs from "fs";
 import os from "os";
+import { execSync } from "child_process";
 import { createRequire } from "module";
 import { StudioServerInternals } from "@remotion/studio-server";
 import type { RenderJob, RenderJobWithCleanup } from "@remotion/studio-shared";
@@ -49,11 +50,11 @@ function getNetworkIP(): string {
 
 /**
  * Derive the serve URL for the remote render server.
- * Uses the Hono proxy's /remotion/ path
+ * Uses the Hono server's /remotion-bundle/ path (the bundled Remotion project).
  */
 function getServeUrl(): string {
   const honoPort = process.env.PORT || "8080";
-  return `http://${getNetworkIP()}:${honoPort}/remotion/`;
+  return `http://${getNetworkIP()}:${honoPort}/remotion-bundle/`;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +131,16 @@ async function processJobIfPossible(): Promise<void> {
   }
 
   try {
+    // Bundle the Remotion project so /remotion-bundle/ is up to date
+    updateJob(job.id, (j) => {
+      if (j.status === "running" && j.progress) {
+        j.progress.message = "Bundling Remotion project...";
+      }
+    });
+    console.log("[studio] Bundling Remotion project...");
+    execSync("pnpm run bundle", { cwd: __dirname, stdio: "inherit" });
+    console.log("[studio] Bundle complete");
+
     // Parse inputProps from the serialized form
     let inputProps: Record<string, unknown> = {};
     try {
