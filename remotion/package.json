@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Remotion video compositions",
   "scripts": {
-    "dev": "npx tsx studio.ts",
-    "start": "npx tsx studio.ts",
+    "dev": "pnpm exec tsx studio.ts",
+    "start": "pnpm exec tsx studio.ts",
     "bundle": "remotion bundle src/index.tsx --out-dir=bundle --public-path=/remotion-bundle/",
     "upgrade": "remotion upgrade"
   },
