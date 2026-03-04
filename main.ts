@@ -25,17 +25,16 @@ async function main(): Promise<void> {
     stripPrefix: "/remotion",
   });
   app.all("/remotion/*", async (c, next) => {
-    // For the initial HTML page load, fetch from Remotion and inject a script
-    // that rewrites window.location.pathname to "/" so Remotion doesn't try to
-    // resolve the "/remotion" prefix as a composition ID.
-    const accept = c.req.header("accept") ?? "";
-    if (accept.includes("text/html")) {
+    // For HTML requests, fetch Remotion's page and inject a flag that switches
+    // URL handling from pathname-based to query-string-based. This prevents
+    // Remotion from interpreting the "/remotion" proxy prefix as a composition ID.
+    if ((c.req.header("accept") ?? "").includes("text/html")) {
       try {
         const res = await fetch(`http://localhost:${remotionPort}/`);
         let html = await res.text();
         html = html.replace(
           "<head>",
-          `<head><script>history.replaceState(null,"","/")</script>`,
+          `<head><script>window.remotion_isReadOnlyStudio=true</script>`,
         );
         return c.html(html);
       } catch {
