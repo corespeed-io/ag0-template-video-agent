@@ -7,4 +7,7 @@ import { Config } from "@remotion/cli/config";
 
 Config.setVideoImageFormat("jpeg");
 Config.setOverwriteOutput(true);
+// publicPath for remote rendering is set via the `bundle` script's
+// --public-path flag. Do NOT override it here — it breaks the dev server
+// by serving bundle.js at /remotion-bundle/bundle.js instead of /bundle.js.
 
