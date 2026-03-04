@@ -23,6 +23,7 @@ import { join } from "@std/path";
 //   undo_file, grep_search, file_search, copy_file, delete_file
 // - RunTerminalCmdTool: Execute shell commands
 import { createFileSystemTools, RunTerminalCmdTool } from "@zypher/agent/tools";
+import { RenderVideoTool } from "./tools/render.ts";
 
 // =============================================================================
 // REMOTION SKILLS LOADER
@@ -67,9 +68,9 @@ export async function createZypherAgentRouter(): Promise<Hono> {
     //   AI_GATEWAY_BASE_URL – Cloudflare AI Gateway endpoint
     //   AI_GATEWAY_API_TOKEN – Authentication token for the gateway
     // Model ID must be in "provider/model-name" format, e.g.:
-    //   "anthropic/claude-sonnet-4-5-20250929"
+    //   "anthropic/claude-sonnet-4-6"
     //   "openai/gpt-4o"
-    model: cloudflareGateway("anthropic/claude-sonnet-4-5-20250929", {
+    model: cloudflareGateway("anthropic/claude-sonnet-4-6", {
       gatewayBaseUrl: getRequiredEnv("AI_GATEWAY_BASE_URL"),
       apiToken: getRequiredEnv("AI_GATEWAY_API_TOKEN"),
       headers: {
@@ -109,6 +110,9 @@ export async function createZypherAgentRouter(): Promise<Hono> {
 
       // Built-in terminal command execution (for running Remotion renders, etc.)
       RunTerminalCmdTool,
+
+      // Remote Remotion render server
+      RenderVideoTool,
     ],
 
     // MCP (Model Context Protocol) servers provide external integrations
