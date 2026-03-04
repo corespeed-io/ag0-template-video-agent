@@ -5,27 +5,40 @@ FROM node:24-slim AS frontend-build
 RUN corepack enable
 WORKDIR /app/ui
 # Install deps first for better layer caching
+
 COPY ui/package.json ui/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY ui/ ./
 RUN pnpm build
 
 # ================================
-# Stage 2 — Install Remotion deps (bun)
+# Stage 2 — Install Remotion deps (pnpm)
 # ================================
-FROM oven/bun:1-slim AS remotion-deps
+FROM node:24-slim AS remotion-deps
+RUN corepack enable
 WORKDIR /app/remotion
-COPY remotion/package.json remotion/bun.lock ./
-RUN bun install --frozen-lockfile
+COPY remotion/package.json remotion/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 # ================================
-# Stage 3 — Production runtime (Deno + bun)
+# Stage 3 — Production runtime
 # ================================
 FROM denoland/deno:2.6.9
 WORKDIR /app
 
-# Copy bun binary so the agent can run Remotion CLI commands
-COPY --from=remotion-deps /usr/local/bin/bun /usr/local/bin/bun
+# Chrome Headless Shell dependencies for Remotion rendering
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 libdbus-1-3 libatk1.0-0 libasound2 \
+    libxrandr2 libxkbcommon-dev libxfixes3 libxcomposite1 \
+    libxdamage1 libgbm-dev libcups2 libcairo2 \
+    libpango-1.0-0 libatk-bridge2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Node.js + pnpm from the remotion-deps stage so the agent can run Remotion CLI
+COPY --from=remotion-deps /usr/local/bin/node /usr/local/bin/node
+COPY --from=remotion-deps /usr/local/lib/node_modules/corepack /usr/local/lib/node_modules/corepack
+RUN ln -sf /usr/local/lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack \
+    && corepack enable
 
 # Cache Deno deps before copying source for better layer caching
 COPY deno.json deno.lock ./
