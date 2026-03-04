@@ -78,14 +78,16 @@ Remotion video compositions live in `remotion/`:
 - `remotion/src/` — composition source code
 - `remotion/public/` — static assets (images, videos, fonts, audio)
 - `remotion/remotion.config.ts` — Remotion config
-- `remotion/server.ts` — optional server-side render server
+- `remotion/studio.ts` — custom Studio startup with remote render queue
 
 ## Remote Rendering
 
 Video rendering uses a remote render server to avoid OOM issues in
-resource-constrained environments. The `render_video` tool in
-`api/tools/render.ts` handles the full workflow: start render, poll for
-completion, download result.
+resource-constrained environments. The remote server exposes a
+`/remotion-renders` endpoint. The `render_video` tool in `api/tools/render.ts`
+handles the full workflow: start render, poll for completion, download result.
+Remotion Studio also forwards render jobs to the remote server via
+`remotion/studio.ts`.
 
 **Environment variables:**
 

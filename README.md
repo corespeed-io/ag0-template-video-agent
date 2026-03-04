@@ -36,11 +36,14 @@ deno task dev                # Agent server (port 8080)
 pnpm run skills:update
 ```
 
-### Render video
+### Bundle for remote rendering
 
 ```console
-cd remotion && pnpm run build
+cd remotion && pnpm run bundle
 ```
+
+This generates `remotion/bundle/` which is served at `/remotion-bundle/` by the
+Hono server. The remote render server uses the `/remotion-renders` endpoint.
 
 ## Docs
 
