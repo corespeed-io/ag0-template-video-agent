@@ -54,7 +54,7 @@ function App() {
         </div>
         <div className="flex-1">
           <iframe
-            src={import.meta.env.VITE_REMOTION_URL ?? "/remotion"}
+            src={import.meta.env.VITE_REMOTION_URL ?? "/remotion/"}
             className="w-full h-full border-none"
             title="Remotion Studio"
           />
