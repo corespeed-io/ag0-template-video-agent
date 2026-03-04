@@ -24,9 +24,7 @@
       "env": {
         "PORT": "8080",
         "VITE_PORT": "5173",
-        "REMOTION_PORT": "4321",
-        "RENDER_SERVER_URL": "http://deckspeed.browser-rendering.orb.local:8080",
-        "REMOTION_SITE_URL": "http://deckspeed.video-agent.orb.local:8080/remotion-bundle/"
+        "REMOTION_PORT": "4321"
       },
       "setup": [
         "deno install --entrypoint /workspace/main.ts"
@@ -56,8 +54,7 @@
       "cwd": "/workspace/remotion",
       "env": {
         "REMOTION_PORT": "4321",
-        "RENDER_SERVER_URL": "http://deckspeed.browser-rendering.orb.local:8080",
-        "REMOTION_SITE_URL": "http://deckspeed.video-agent.orb.local:8080/remotion-bundle/"
+        "RENDER_SERVER_URL": "http://deckspeed.browser-rendering.orb.local:8080"
       },
       "setup": [
         "pnpm install"

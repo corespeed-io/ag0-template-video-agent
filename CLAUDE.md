@@ -91,9 +91,6 @@ completion, download result.
 
 - `RENDER_SERVER_URL` — URL of the remote render server (e.g.
   `http://deckspeed.browser-rendering.orb.local`)
-- `REMOTION_SITE_URL` — Public URL where the render server can fetch the
-  Remotion bundle (e.g.
-  `http://deckspeed.video-agent.orb.local:8080/remotion-bundle/`)
 
 **Before rendering remotely**, the Remotion project must be bundled:
 

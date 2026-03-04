@@ -8,6 +8,7 @@
 
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { createRequire } from "module";
 import { StudioServerInternals } from "@remotion/studio-server";
 import type { RenderJob, RenderJobWithCleanup } from "@remotion/studio-shared";
@@ -31,9 +32,29 @@ if (fs.existsSync(envPath)) {
 }
 
 const RENDER_SERVER_URL = process.env.RENDER_SERVER_URL ?? "";
-const REMOTION_SITE_URL = process.env.REMOTION_SITE_URL ?? "";
 const DESIRED_PORT = parseInt(process.env.REMOTION_PORT || "4321", 10);
 const POLL_INTERVAL_MS = 2000;
+
+/** Detect the first non-internal IPv4 address. */
+function getNetworkIP(): string {
+  for (const interfaces of Object.values(os.networkInterfaces())) {
+    for (const iface of interfaces ?? []) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return "127.0.0.1";
+}
+
+/**
+ * Derive the serve URL for the remote render server.
+ * Uses the Hono proxy's /remotion/ path
+ */
+function getServeUrl(): string {
+  const honoPort = process.env.PORT || "8080";
+  return `http://${getNetworkIP()}:${honoPort}/remotion/`;
+}
 
 // ---------------------------------------------------------------------------
 // Job Queue
@@ -107,12 +128,6 @@ async function processJobIfPossible(): Promise<void> {
     processJobIfPossible();
     return;
   }
-  if (!REMOTION_SITE_URL) {
-    failJob(job, "REMOTION_SITE_URL environment variable is not set");
-    processing = false;
-    processJobIfPossible();
-    return;
-  }
 
   try {
     // Parse inputProps from the serialized form
@@ -125,8 +140,9 @@ async function processJobIfPossible(): Promise<void> {
       // If parsing fails, send empty props
     }
 
+    const serveUrl = getServeUrl();
     const body: Record<string, unknown> = {
-      serveUrl: REMOTION_SITE_URL,
+      serveUrl,
       compositionId: job.compositionId,
     };
     if (job.type === "video") {
@@ -212,7 +228,9 @@ async function processJobIfPossible(): Promise<void> {
         updateJob(job.id, (j) => {
           if (j.status === "running" && j.progress) {
             j.progress.value = progressValue;
-            j.progress.message = `Rendering... ${Math.round(progressValue * 100)}%`;
+            j.progress.message = `Rendering... ${
+              Math.round(progressValue * 100)
+            }%`;
           }
         });
       }
@@ -363,6 +381,7 @@ async function main(): Promise<void> {
   console.log(`[studio] Starting Remotion Studio on port ${DESIRED_PORT}`);
   if (RENDER_SERVER_URL) {
     console.log(`[studio] Remote render server: ${RENDER_SERVER_URL}`);
+    console.log(`[studio] Serve URL for renders: ${getServeUrl()}`);
   } else {
     console.warn(
       "[studio] WARNING: RENDER_SERVER_URL not set — renders will fail",

@@ -23,7 +23,7 @@ import { join } from "@std/path";
 //   undo_file, grep_search, file_search, copy_file, delete_file
 // - RunTerminalCmdTool: Execute shell commands
 import { createFileSystemTools, RunTerminalCmdTool } from "@zypher/agent/tools";
-import { RenderVideoTool } from "./tools/render.ts";
+
 
 // =============================================================================
 // REMOTION SKILLS LOADER
@@ -111,8 +111,6 @@ export async function createZypherAgentRouter(): Promise<Hono> {
       // Built-in terminal command execution (for running Remotion renders, etc.)
       RunTerminalCmdTool,
 
-      // Remote Remotion render server
-      RenderVideoTool,
     ],
 
     // MCP (Model Context Protocol) servers provide external integrations
