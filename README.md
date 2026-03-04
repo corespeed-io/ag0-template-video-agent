@@ -11,7 +11,7 @@ interface and live Remotion Studio preview.
 - **Chat UI** (port 5173) — React 19 + Vite split-panel app (`ui/`)
 - **Agent Server** (port 8080) — Deno + Hono SSE backend powered by Claude
   (`api/`)
-- **Remotion Studio** (port 6000) — Live video preview in an iframe
+- **Remotion Studio** (port 4111) — Live video preview in an iframe
   (`remotion/`)
 
 ## Commands
@@ -25,7 +25,7 @@ pnpm run dev:all
 ### Start individual services
 
 ```console
-cd remotion && pnpm dev      # Remotion Studio (port 6000)
+cd remotion && pnpm dev      # Remotion Studio (port 4111)
 cd ui && pnpm dev            # Chat UI (port 5173)
 deno task dev                # Agent server (port 8080)
 ```

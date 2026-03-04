@@ -24,7 +24,7 @@
       "env": {
         "PORT": "8080",
         "VITE_PORT": "5173",
-        "REMOTION_PORT": "6000"
+        "REMOTION_PORT": "4111"
       },
       "setup": [
         "deno install --entrypoint /workspace/main.ts"
@@ -44,7 +44,7 @@
         "pnpm install"
       ]
     },
-    // Remotion Studio — video composition editor (port 6000, embedded as iframe)
+    // Remotion Studio — video composition editor (port 4111, embedded as iframe)
     "remotion-studio": {
       "command": "pnpm",
       "args": [

@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Remotion video compositions",
   "scripts": {
-    "dev": "remotion studio src/index.tsx --no-open --port=6000",
-    "start": "remotion studio src/index.tsx --port=6000",
+    "dev": "remotion studio src/index.tsx --no-open --port=4111",
+    "start": "remotion studio src/index.tsx --port=4111",
     "build": "remotion render src/index.tsx Main out.mov",
     "build:sequence": "remotion render src/index.tsx Main out --sequence",
     "upgrade": "remotion upgrade",

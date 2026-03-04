@@ -64,7 +64,7 @@ Browse available components: https://ui.shadcn.com/docs/components Config:
 
 Three processes run simultaneously:
 
-1. **Port 6000** — Remotion Studio (`cd remotion && pnpm dev`)
+1. **Port 4111** — Remotion Studio (`cd remotion && pnpm dev`)
 2. **Port 5173** — Vite chat UI (`cd ui && pnpm dev`)
 3. **Port 8080** — Deno + Hono agent server (`deno task dev`)
 
