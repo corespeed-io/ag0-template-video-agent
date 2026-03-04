@@ -64,7 +64,7 @@ Browse available components: https://ui.shadcn.com/docs/components Config:
 
 Three processes run simultaneously:
 
-1. **Port 4111** — Remotion Studio (`cd remotion && pnpm dev`)
+1. **Port 4321** — Remotion Studio (`cd remotion && pnpm dev`)
 2. **Port 5173** — Vite chat UI (`cd ui && pnpm dev`)
 3. **Port 8080** — Deno + Hono agent server (`deno task dev`)
 
@@ -79,6 +79,30 @@ Remotion video compositions live in `remotion/`:
 - `remotion/public/` — static assets (images, videos, fonts, audio)
 - `remotion/remotion.config.ts` — Remotion config
 - `remotion/server.ts` — optional server-side render server
+
+## Remote Rendering
+
+Video rendering uses a remote render server to avoid OOM issues in
+resource-constrained environments. The `render_video` tool in
+`api/tools/render.ts` handles the full workflow: start render, poll for
+completion, download result.
+
+**Environment variables:**
+
+- `RENDER_SERVER_URL` — URL of the remote render server (e.g.
+  `http://deckspeed.browser-rendering.orb.local`)
+- `REMOTION_SITE_URL` — Public URL where the render server can fetch the
+  Remotion bundle (e.g.
+  `http://deckspeed.video-agent.orb.local:8080/remotion-bundle/`)
+
+**Before rendering remotely**, the Remotion project must be bundled:
+
+```sh
+cd remotion && pnpm run bundle
+```
+
+This generates `remotion/bundle/` which is served at `/remotion-bundle/` by the
+Hono server.
 
 ## Remotion Skills
 

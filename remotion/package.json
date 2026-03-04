@@ -3,26 +3,27 @@
   "version": "1.0.0",
   "description": "Remotion video compositions",
   "scripts": {
-    "dev": "remotion studio src/index.tsx --no-open --port=4111",
-    "start": "remotion studio src/index.tsx --port=4111",
+    "dev": "remotion studio src/index.tsx --no-open --port=4321",
+    "start": "remotion studio src/index.tsx --port=4321",
     "build": "remotion render src/index.tsx Main out.mov",
     "build:sequence": "remotion render src/index.tsx Main out --sequence",
+    "bundle": "remotion bundle src/index.tsx --out-dir=bundle --public-path=/remotion-bundle/",
     "upgrade": "remotion upgrade",
     "server": "npx tsx server.ts"
   },
   "repository": {},
   "license": "UNLICENSED",
   "dependencies": {
-    "@remotion/bundler": "4.0.332",
-    "@remotion/cli": "4.0.332",
-    "@remotion/renderer": "4.0.332",
+    "@remotion/bundler": "4.0.432",
+    "@remotion/cli": "4.0.432",
+    "@remotion/renderer": "4.0.432",
     "@types/express": "^5.0.3",
     "@types/react": "^19.1.10",
     "@types/web": "^0.0.260",
     "express": "^5.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "remotion": "4.0.332",
+    "remotion": "4.0.432",
     "typescript": "^5.9.2"
   },
   "devDependencies": {

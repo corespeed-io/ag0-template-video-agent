@@ -32,7 +32,9 @@
       "env": {
         "PORT": "8080",
         "VITE_PORT": "5173",
-        "REMOTION_PORT": "4111"
+        "REMOTION_PORT": "4321",
+        "RENDER_SERVER_URL": "http://deckspeed.browser-rendering.orb.local:8080",
+        "REMOTION_SITE_URL": "http://deckspeed.video-agent.orb.local:8080/remotion-bundle/"
       },
       "setup": [
         "deno install --entrypoint /workspace/main.ts"
@@ -52,7 +54,7 @@
         "pnpm install"
       ]
     },
-    // Remotion Studio — video composition editor (port 4111, embedded as iframe)
+    // Remotion Studio — video composition editor (port 4321, embedded as iframe)
     "remotion-studio": {
       "command": "pnpm",
       "args": [
