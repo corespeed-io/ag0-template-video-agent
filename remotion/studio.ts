@@ -153,7 +153,7 @@ async function processJobIfPossible(): Promise<void> {
     }
 
     // Start the remote render
-    const startRes = await fetch(`${RENDER_SERVER_URL}/renders`, {
+    const startRes = await fetch(`${RENDER_SERVER_URL}/remotion-renders`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -188,7 +188,7 @@ async function processJobIfPossible(): Promise<void> {
       if (cancelled) {
         // Attempt to cancel on remote server
         try {
-          await fetch(`${RENDER_SERVER_URL}/renders/${remoteJobId}`, {
+          await fetch(`${RENDER_SERVER_URL}/remotion-renders/${remoteJobId}`, {
             method: "DELETE",
           });
         } catch {
@@ -203,7 +203,7 @@ async function processJobIfPossible(): Promise<void> {
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
 
       const pollRes = await fetch(
-        `${RENDER_SERVER_URL}/renders/${remoteJobId}`,
+        `${RENDER_SERVER_URL}/remotion-renders/${remoteJobId}`,
       );
       if (!pollRes.ok) {
         const errText = await pollRes.text();
