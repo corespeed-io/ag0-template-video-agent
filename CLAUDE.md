@@ -4,15 +4,15 @@ See README.md for project overview and getting started.
 
 ## Tooling
 
-| What            | Backend (`api/`)                                   | Frontend (`ui/`)                | Remotion (`remotion/`)                  |
-| --------------- | -------------------------------------------------- | ------------------------------- | --------------------------------------- |
-| Runtime         | Deno                                               | Node (via Vite)                 | Node (via Remotion CLI)                 |
-| Package manager | `deno add jsr:@scope/package` / `deno add npm:pkg` | `cd ui && pnpm add pkg`         | `cd remotion && pnpm add pkg`           |
-| Docs lookup     | `deno doc jsr:@zypher/agent`                       | —                               | —                                       |
-| Linter          | `deno lint`                                        | `cd ui && pnpm lint` (ESLint)   | —                                       |
-| Formatter       | `deno fmt`                                         | `cd ui && pnpm format` (Biome)  | —                                       |
-| Type check      | `deno check main.ts`                               | `cd ui && pnpm typecheck`       | —                                       |
-| Dev server      | `deno task dev`                                    | `cd ui && pnpm dev`             | `cd remotion && pnpm dev`               |
+| What            | Backend (`api/`)                                   | Frontend (`ui/`)               | Remotion (`remotion/`)        |
+| --------------- | -------------------------------------------------- | ------------------------------ | ----------------------------- |
+| Runtime         | Deno                                               | Node (via Vite)                | Node (via Remotion CLI)       |
+| Package manager | `deno add jsr:@scope/package` / `deno add npm:pkg` | `cd ui && pnpm add pkg`        | `cd remotion && pnpm add pkg` |
+| Docs lookup     | `deno doc jsr:@zypher/agent`                       | —                              | —                             |
+| Linter          | `deno lint`                                        | `cd ui && pnpm lint` (ESLint)  | —                             |
+| Formatter       | `deno fmt`                                         | `cd ui && pnpm format` (Biome) | —                             |
+| Type check      | `deno check main.ts`                               | `cd ui && pnpm typecheck`      | —                             |
+| Dev server      | `deno task dev`                                    | `cd ui && pnpm dev`            | `cd remotion && pnpm dev`     |
 
 ## Restrictions
 
@@ -64,7 +64,7 @@ Browse available components: https://ui.shadcn.com/docs/components Config:
 
 Three processes run simultaneously:
 
-1. **Port 3000** — Remotion Studio (`cd remotion && pnpm dev`)
+1. **Port 6000** — Remotion Studio (`cd remotion && pnpm dev`)
 2. **Port 5173** — Vite chat UI (`cd ui && pnpm dev`)
 3. **Port 8080** — Deno + Hono agent server (`deno task dev`)
 
@@ -74,6 +74,7 @@ for non-API requests. The Remotion Studio is embedded as an iframe.
 ## Remotion
 
 Remotion video compositions live in `remotion/`:
+
 - `remotion/src/` — composition source code
 - `remotion/public/` — static assets (images, videos, fonts, audio)
 - `remotion/remotion.config.ts` — Remotion config

@@ -45,6 +45,12 @@ export function proxy(
     }
 
     // HTTP proxy
-    return await honoProxy(target.href, { raw: c.req.raw });
+    try {
+      return await honoProxy(target.href, { raw: c.req.raw });
+    } catch (err) {
+      const msg =
+        err instanceof TypeError ? "Upstream unavailable" : String(err);
+      return c.json({ error: msg, target: target.origin }, 502);
+    }
   };
 }

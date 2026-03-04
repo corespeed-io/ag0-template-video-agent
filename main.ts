@@ -19,7 +19,7 @@ async function main(): Promise<void> {
   // The main page loads at /remotion/ (prefix-stripped), but Remotion's HTML uses
   // absolute root paths (/bundle.js, /static-*, /api/*, /events, /stream) so we
   // also proxy those specific paths to Remotion Studio.
-  const remotionPort = parsePort(Deno.env.get("REMOTION_PORT"), 3000);
+  const remotionPort = parsePort(Deno.env.get("REMOTION_PORT"), 6000);
   const remotionProxy = proxy(`http://localhost:${remotionPort}`);
   app.all(
     "/remotion/*",
