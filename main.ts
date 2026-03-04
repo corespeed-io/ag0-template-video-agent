@@ -25,20 +25,18 @@ async function main(): Promise<void> {
     "/remotion/*",
     proxy(`http://localhost:${remotionPort}`, { stripPrefix: "/remotion" }),
   );
-  // Remotion Studio uses hardcoded absolute root paths (no --base-path support).
-  // When the iframe at /remotion/ loads, its JS requests these paths at the root.
-  // Our app's /api/agent/* is matched first by .route("/api", api) above;
-  // unmatched /api/* paths (Remotion's endpoints) fall through to this proxy.
-  // Maintain this list when upgrading Remotion — check bundle.js for new paths.
-  for (const p of [
-    "/bundle.js",
-    "/__webpack_hmr",
-    "/events",
-    "/stream",
-    "/favicon.ico",
-    "/beep.wav",
-    "/source-map-helper.wasm",
-  ]) app.all(p, remotionProxy);
+  // Remotion Studio uses hardcoded absolute root paths (no --base-path support). Proxy those specific paths to ensure the studio works correctly when embedded in AG0/dev.
+  for (
+    const p of [
+      "/bundle.js",
+      "/__webpack_hmr",
+      "/events",
+      "/stream",
+      "/favicon.ico",
+      "/beep.wav",
+      "/source-map-helper.wasm",
+    ]
+  ) app.all(p, remotionProxy);
   app.all("/static-:hash/*", remotionProxy);
   app.all("/outputs-:hash/*", remotionProxy);
   app.all("/api/*", remotionProxy);
@@ -60,4 +58,3 @@ async function main(): Promise<void> {
 if (import.meta.main) {
   main();
 }
-  
