@@ -37,9 +37,6 @@
         "dev"
       ],
       "cwd": "/workspace/ui",
-      "env": {
-        "VITE_REMOTION_URL": "/remotion/"
-      },
       "setup": [
         "pnpm install"
       ]

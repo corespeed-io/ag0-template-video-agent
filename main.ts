@@ -21,10 +21,29 @@ async function main(): Promise<void> {
   // also proxy those specific paths to Remotion Studio.
   const remotionPort = parsePort(Deno.env.get("REMOTION_PORT"), 6000);
   const remotionProxy = proxy(`http://localhost:${remotionPort}`);
-  app.all(
-    "/remotion/*",
-    proxy(`http://localhost:${remotionPort}`, { stripPrefix: "/remotion" }),
-  );
+  const remotionStripProxy = proxy(`http://localhost:${remotionPort}`, {
+    stripPrefix: "/remotion",
+  });
+  app.all("/remotion/*", async (c, next) => {
+    // For the initial HTML page load, fetch from Remotion and inject a script
+    // that rewrites window.location.pathname to "/" so Remotion doesn't try to
+    // resolve the "/remotion" prefix as a composition ID.
+    const accept = c.req.header("accept") ?? "";
+    if (accept.includes("text/html")) {
+      try {
+        const res = await fetch(`http://localhost:${remotionPort}/`);
+        let html = await res.text();
+        html = html.replace(
+          "<head>",
+          `<head><script>history.replaceState(null,"","/")</script>`,
+        );
+        return c.html(html);
+      } catch {
+        return c.json({ error: "Remotion Studio unavailable" }, 502);
+      }
+    }
+    return remotionStripProxy(c, next);
+  });
   // Remotion Studio uses hardcoded absolute root paths (no --base-path support). Proxy those specific paths to ensure the studio works correctly when embedded in AG0/dev.
   for (
     const p of [
