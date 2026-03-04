@@ -26,15 +26,7 @@ RUN pnpm install --frozen-lockfile
 FROM denoland/deno:2.6.9
 WORKDIR /app
 
-# Chrome Headless Shell dependencies for Remotion rendering
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libnss3 libdbus-1-3 libatk1.0-0 libasound2 \
-    libxrandr2 libxkbcommon-dev libxfixes3 libxcomposite1 \
-    libxdamage1 libgbm-dev libcups2 libcairo2 \
-    libpango-1.0-0 libatk-bridge2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy Node.js + pnpm from the remotion-deps stage so the agent can run Remotion CLI
+# Copy Node.js + pnpm from the remotion-deps stage so the agent can run Remotion Studio
 COPY --from=remotion-deps /usr/local/bin/node /usr/local/bin/node
 COPY --from=remotion-deps /usr/local/lib/node_modules/corepack /usr/local/lib/node_modules/corepack
 RUN ln -sf /usr/local/lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack \
@@ -51,7 +43,7 @@ COPY api/ ./api/
 # Remotion source + config + Node deps
 COPY remotion/src/ ./remotion/src/
 COPY remotion/public/ ./remotion/public/
-COPY remotion/remotion.config.ts remotion/tsconfig.json remotion/package.json ./remotion/
+COPY remotion/studio.ts remotion/remotion.config.ts remotion/tsconfig.json remotion/package.json ./remotion/
 COPY --from=remotion-deps /app/remotion/node_modules ./remotion/node_modules
 
 # Copy built chat UI from stage 1
