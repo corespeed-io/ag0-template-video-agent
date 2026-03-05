@@ -37,7 +37,7 @@
         "VITE_PORT": "5173",
         "REMOTION_PORT": "4321"
       },
-      "dependsOn": ["install"]
+      "blocking": ["install"]
     },
     // Frontend dev server (Vite + React via pnpm)
     "frontend": {
@@ -49,7 +49,7 @@
       "env": {
         "VITE_REMOTION_URL": "/remotion/Main"
       },
-      "dependsOn": ["install"]
+      "blocking": ["install"]
     },
     // Remotion Studio — video composition editor (port 4321, embedded as iframe)
     // Renders are forwarded to the remote render server via custom queueMethods.
@@ -63,7 +63,7 @@
         "REMOTION_PORT": "4321",
         "RENDER_SERVER_URL": "https://browser-rendering.corespeed.io"
       },
-      "dependsOn": ["install"]
+      "blocking": ["install"]
     }
   }
 }
