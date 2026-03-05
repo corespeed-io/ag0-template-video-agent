@@ -18,6 +18,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    // Disable esbuild dep pre-bundling to reduce memory usage during startup
+    // on resource-constrained sandboxes (avoids OOM / EPIPE crashes)
+    noDiscovery: true,
+    include: [],
+  },
   server: {
     hmr: {
       // Behind a reverse proxy, the browser connects on 443 (HTTPS)
