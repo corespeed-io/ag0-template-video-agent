@@ -22,10 +22,9 @@ export function proxy(
     target.host = base.host;
     target.protocol = base.protocol;
     const rawPath = target.pathname;
-    const strippedPath =
-      stripPrefix && rawPath.startsWith(stripPrefix)
-        ? rawPath.slice(stripPrefix.length) || "/"
-        : rawPath;
+    const strippedPath = stripPrefix && rawPath.startsWith(stripPrefix)
+      ? rawPath.slice(stripPrefix.length) || "/"
+      : rawPath;
     target.pathname = basePath + strippedPath;
 
     // WebSocket upgrade
@@ -48,8 +47,9 @@ export function proxy(
     try {
       return await honoProxy(target.href, { raw: c.req.raw });
     } catch (err) {
-      const msg =
-        err instanceof TypeError ? "Upstream unavailable" : String(err);
+      const msg = err instanceof TypeError
+        ? "Upstream unavailable"
+        : String(err);
       return c.json({ error: msg, target: target.origin }, 502);
     }
   };

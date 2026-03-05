@@ -23,12 +23,12 @@ importers:
       '@remotion/studio-server':
         specifier: 4.0.432
         version: 4.0.432(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@remotion/studio-shared':
+        specifier: 4.0.432
+        version: 4.0.432(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@types/react':
         specifier: ^19.1.10
         version: 19.2.14
-      '@types/web':
-        specifier: ^0.0.260
-        version: 0.0.260
       react:
         specifier: ^19.1.1
         version: 19.2.4
@@ -638,9 +638,6 @@ packages:
 
   '@types/react@19.2.14':
     resolution: {integrity: sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w==}
-
-  '@types/web@0.0.260':
-    resolution: {integrity: sha512-ZDxbu1QTTlwmm/nP9LvtQtwpSbsn9Wa3yWUElxotCuSLDtfqfH8uLv3STlh6GmlJveDKOV0IanTYvR8BHvszFQ==}
 
   '@types/yauzl@2.10.3':
     resolution: {integrity: sha512-oJoftv0LSuaDZE3Le4DbKX+KS9G36NzOeSap90UIK0yMA/NhKJhqlSGtNDORNRaIbQfzjXDrQa0ytJ6mNRGz/Q==}
@@ -1829,8 +1826,6 @@ snapshots:
   '@types/react@19.2.14':
     dependencies:
       csstype: 3.2.3
-
-  '@types/web@0.0.260': {}
 
   '@types/yauzl@2.10.3':
     dependencies:
