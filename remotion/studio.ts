@@ -162,7 +162,6 @@ async function processJobIfPossible(): Promise<void> {
 
     // Common params
     if (job.scale !== 1) body.scale = job.scale;
-    if (job.jpegQuality) body.jpegQuality = job.jpegQuality;
     if (job.logLevel) body.logLevel = job.logLevel;
     if (job.delayRenderTimeout !== 30000) body.timeoutInMilliseconds = job.delayRenderTimeout;
     if (job.envVariables && Object.keys(job.envVariables).length > 0) {
@@ -173,21 +172,37 @@ async function processJobIfPossible(): Promise<void> {
       body.type = "still";
       body.imageFormat = job.imageFormat;
       if (job.frame !== 0) body.frame = job.frame;
+      // jpegQuality only valid when imageFormat is jpeg
+      if (job.imageFormat === "jpeg" && job.jpegQuality) body.jpegQuality = job.jpegQuality;
     } else {
       // Both "video" and "sequence" map to the remote server's "video" type
       body.type = "video";
       if (job.type === "video") {
-        body.codec = job.codec;
+        const codec = job.codec;
+        body.codec = codec;
         if (job.audioCodec) body.audioCodec = job.audioCodec;
         if (job.muted) body.muted = job.muted;
         if (job.enforceAudioTrack) body.enforceAudioTrack = job.enforceAudioTrack;
         if (job.crf) body.crf = job.crf;
         if (job.videoBitrate) body.videoBitrate = job.videoBitrate;
         if (job.audioBitrate) body.audioBitrate = job.audioBitrate;
-        if (job.x264Preset) body.x264Preset = job.x264Preset;
-        if (job.everyNthFrame !== 1) body.everyNthFrame = job.everyNthFrame;
-        if (job.numberOfGifLoops !== null) body.numberOfGifLoops = job.numberOfGifLoops;
-        if (job.proResProfile) body.proResProfile = job.proResProfile;
+        // jpegQuality only when videoImageFormat is jpeg (default)
+        if (job.jpegQuality && (job.imageFormat ?? "jpeg") === "jpeg") {
+          body.jpegQuality = job.jpegQuality;
+        }
+        // x264Preset only for h264 codecs
+        if (job.x264Preset && ["h264", "h264-mkv", "h264-ts"].includes(codec)) {
+          body.x264Preset = job.x264Preset;
+        }
+        // gif-only params
+        if (codec === "gif") {
+          if (job.everyNthFrame !== 1) body.everyNthFrame = job.everyNthFrame;
+          if (job.numberOfGifLoops !== null) body.numberOfGifLoops = job.numberOfGifLoops;
+        }
+        // proResProfile only for prores codec
+        if (job.proResProfile && codec === "prores") {
+          body.proResProfile = job.proResProfile;
+        }
         if (job.pixelFormat !== "yuv420p") body.pixelFormat = job.pixelFormat;
         if (job.colorSpace !== "default") body.colorSpace = job.colorSpace;
         if (job.encodingMaxRate) body.encodingMaxRate = job.encodingMaxRate;
