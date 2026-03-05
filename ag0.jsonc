@@ -54,7 +54,7 @@
       "cwd": "/workspace/remotion",
       "env": {
         "REMOTION_PORT": "4321",
-        "RENDER_SERVER_URL": "https://browser-renderer.corespeed.io"
+        "RENDER_SERVER_URL": "https://browser-rendering.corespeed.io"
       },
       "setup": [
         "pnpm install"
