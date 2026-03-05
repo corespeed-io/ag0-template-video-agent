@@ -8,7 +8,6 @@
 
 import path from "path";
 import fs from "fs";
-import os from "os";
 import zlib from "zlib";
 import { execSync } from "child_process";
 import { createRequire } from "module";
@@ -37,25 +36,18 @@ const RENDER_SERVER_URL = process.env.RENDER_SERVER_URL ?? "";
 const DESIRED_PORT = parseInt(process.env.REMOTION_PORT || "4321", 10);
 const POLL_INTERVAL_MS = 2000;
 
-/** Detect the first non-internal IPv4 address. */
-function getNetworkIP(): string {
-  for (const interfaces of Object.values(os.networkInterfaces())) {
-    for (const iface of interfaces ?? []) {
-      if (iface.family === "IPv4" && !iface.internal) {
-        return iface.address;
-      }
-    }
-  }
-  return "127.0.0.1";
-}
-
 /**
  * Derive the serve URL for the remote render server.
  * Uses the Hono server's /remotion-bundle/ path (the bundled Remotion project).
  */
 function getServeUrl(): string {
-  const honoPort = process.env.PORT || "8080";
-  return `http://${getNetworkIP()}:${honoPort}/remotion-bundle/`;
+  const sandboxDomain = process.env.SANDBOX_DOMAIN;
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  if (!sandboxDomain && !railwayDomain) {
+    throw new Error("SANDBOX_DOMAIN or RAILWAY_PUBLIC_DOMAIN must be set");
+  }
+  const host = sandboxDomain ? `8080-${sandboxDomain}` : railwayDomain!;
+  return `https://${host}/remotion-bundle/`;
 }
 
 // ---------------------------------------------------------------------------
