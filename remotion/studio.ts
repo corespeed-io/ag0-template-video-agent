@@ -156,11 +156,49 @@ async function processJobIfPossible(): Promise<void> {
       serveUrl,
       compositionId: job.compositionId,
     };
-    if (job.type === "video") {
-      body.codec = job.codec;
-    }
     if (Object.keys(inputProps).length > 0) {
       body.inputProps = inputProps;
+    }
+
+    // Common params
+    if (job.scale !== 1) body.scale = job.scale;
+    if (job.jpegQuality) body.jpegQuality = job.jpegQuality;
+    if (job.logLevel) body.logLevel = job.logLevel;
+    if (job.delayRenderTimeout !== 30000) body.timeoutInMilliseconds = job.delayRenderTimeout;
+    if (job.envVariables && Object.keys(job.envVariables).length > 0) {
+      body.envVariables = job.envVariables;
+    }
+
+    if (job.type === "still") {
+      body.type = "still";
+      body.imageFormat = job.imageFormat;
+      if (job.frame !== 0) body.frame = job.frame;
+    } else {
+      // Both "video" and "sequence" map to the remote server's "video" type
+      body.type = "video";
+      if (job.type === "video") {
+        body.codec = job.codec;
+        if (job.audioCodec) body.audioCodec = job.audioCodec;
+        if (job.muted) body.muted = job.muted;
+        if (job.enforceAudioTrack) body.enforceAudioTrack = job.enforceAudioTrack;
+        if (job.crf) body.crf = job.crf;
+        if (job.videoBitrate) body.videoBitrate = job.videoBitrate;
+        if (job.audioBitrate) body.audioBitrate = job.audioBitrate;
+        if (job.x264Preset) body.x264Preset = job.x264Preset;
+        if (job.everyNthFrame !== 1) body.everyNthFrame = job.everyNthFrame;
+        if (job.numberOfGifLoops !== null) body.numberOfGifLoops = job.numberOfGifLoops;
+        if (job.proResProfile) body.proResProfile = job.proResProfile;
+        if (job.pixelFormat !== "yuv420p") body.pixelFormat = job.pixelFormat;
+        if (job.colorSpace !== "default") body.colorSpace = job.colorSpace;
+        if (job.encodingMaxRate) body.encodingMaxRate = job.encodingMaxRate;
+        if (job.encodingBufferSize) body.encodingBufferSize = job.encodingBufferSize;
+        if (job.disallowParallelEncoding) body.disallowParallelEncoding = job.disallowParallelEncoding;
+        if (job.forSeamlessAacConcatenation) body.forSeamlessAacConcatenation = job.forSeamlessAacConcatenation;
+        if (job.startFrame > 0 || job.endFrame > 0) {
+          body.frameRange = [job.startFrame, job.endFrame];
+        }
+      }
+      if (job.concurrency > 1) body.concurrency = job.concurrency;
     }
 
     // Start the remote render
