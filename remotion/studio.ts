@@ -9,6 +9,7 @@
 import path from "path";
 import fs from "fs";
 import os from "os";
+import zlib from "zlib";
 import { execSync } from "child_process";
 import { createRequire } from "module";
 import { StudioServerInternals } from "@remotion/studio-server";
@@ -55,6 +56,69 @@ function getNetworkIP(): string {
 function getServeUrl(): string {
   const honoPort = process.env.PORT || "8080";
   return `http://${getNetworkIP()}:${honoPort}/remotion-bundle/`;
+}
+
+// ---------------------------------------------------------------------------
+// Zip Extraction (pure Node.js, no external binary needed)
+// ---------------------------------------------------------------------------
+
+/** Extract a flat zip archive into outDir. Handles deflate and stored entries. */
+function extractZip(zipBuf: Buffer, outDir: string): void {
+  // End of Central Directory record is the last 22+ bytes
+  let eocdOffset = -1;
+  for (let i = zipBuf.length - 22; i >= 0; i--) {
+    if (zipBuf.readUInt32LE(i) === 0x06054b50) {
+      eocdOffset = i;
+      break;
+    }
+  }
+  if (eocdOffset === -1) throw new Error("Invalid zip: EOCD not found");
+
+  const cdOffset = zipBuf.readUInt32LE(eocdOffset + 16);
+  const cdEntries = zipBuf.readUInt16LE(eocdOffset + 10);
+  let pos = cdOffset;
+
+  for (let i = 0; i < cdEntries; i++) {
+    if (zipBuf.readUInt32LE(pos) !== 0x02014b50) {
+      throw new Error("Invalid zip: bad central directory entry");
+    }
+    const nameLen = zipBuf.readUInt16LE(pos + 28);
+    const extraLen = zipBuf.readUInt16LE(pos + 30);
+    const commentLen = zipBuf.readUInt16LE(pos + 32);
+    const localHeaderOffset = zipBuf.readUInt32LE(pos + 42);
+    const fileName = zipBuf.subarray(pos + 46, pos + 46 + nameLen).toString("utf-8");
+    pos += 46 + nameLen + extraLen + commentLen;
+
+    // Skip directories
+    if (fileName.endsWith("/")) continue;
+
+    // Read local file header to find data start
+    const lh = localHeaderOffset;
+    if (zipBuf.readUInt32LE(lh) !== 0x04034b50) {
+      throw new Error("Invalid zip: bad local file header");
+    }
+    const method = zipBuf.readUInt16LE(lh + 8);
+    const compSize = zipBuf.readUInt32LE(lh + 18);
+    const lhNameLen = zipBuf.readUInt16LE(lh + 26);
+    const lhExtraLen = zipBuf.readUInt16LE(lh + 28);
+    const dataStart = lh + 30 + lhNameLen + lhExtraLen;
+    const compressed = zipBuf.subarray(dataStart, dataStart + compSize);
+
+    let fileData: Buffer;
+    if (method === 0) {
+      // Stored
+      fileData = Buffer.from(compressed);
+    } else if (method === 8) {
+      // Deflate
+      fileData = zlib.inflateRawSync(compressed);
+    } else {
+      throw new Error(`Unsupported zip compression method: ${method}`);
+    }
+
+    // Use only the basename to avoid path traversal
+    const baseName = path.basename(fileName);
+    fs.writeFileSync(path.join(outDir, baseName), fileData);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +194,14 @@ async function processJobIfPossible(): Promise<void> {
     return;
   }
 
+  // Listen for cancellation via Remotion's cancelToken
+  let cancelled = false;
+  if (job.cancelToken?.cancelSignal) {
+    job.cancelToken.cancelSignal(() => {
+      cancelled = true;
+    });
+  }
+
   try {
     // Bundle the Remotion project so /remotion-bundle/ is up to date
     updateJob(job.id, (j) => {
@@ -151,219 +223,10 @@ async function processJobIfPossible(): Promise<void> {
       // If parsing fails, send empty props
     }
 
-    const serveUrl = getServeUrl();
-    const body: Record<string, unknown> = {
-      serveUrl,
-      compositionId: job.compositionId,
-    };
-    if (Object.keys(inputProps).length > 0) {
-      body.inputProps = inputProps;
-    }
-
-    // Common params
-    if (job.scale !== 1) body.scale = job.scale;
-    if (job.logLevel) body.logLevel = job.logLevel;
-    if (job.delayRenderTimeout !== 30000) body.timeoutInMilliseconds = job.delayRenderTimeout;
-    if (job.envVariables && Object.keys(job.envVariables).length > 0) {
-      body.envVariables = job.envVariables;
-    }
-
-    if (job.type === "still") {
-      body.type = "still";
-      body.imageFormat = job.imageFormat;
-      if (job.frame !== 0) body.frame = job.frame;
-      // jpegQuality only valid when imageFormat is jpeg
-      if (job.imageFormat === "jpeg" && job.jpegQuality) body.jpegQuality = job.jpegQuality;
+    if (job.type === "sequence") {
+      await renderSequence(job, inputProps, () => cancelled);
     } else {
-      // Both "video" and "sequence" map to the remote server's "video" type
-      body.type = "video";
-      if (job.type === "video") {
-        const codec = job.codec;
-        body.codec = codec;
-        if (job.audioCodec) body.audioCodec = job.audioCodec;
-        if (job.muted) body.muted = job.muted;
-        if (job.enforceAudioTrack) body.enforceAudioTrack = job.enforceAudioTrack;
-        if (job.crf) body.crf = job.crf;
-        if (job.videoBitrate) body.videoBitrate = job.videoBitrate;
-        if (job.audioBitrate) body.audioBitrate = job.audioBitrate;
-        // jpegQuality only when videoImageFormat is jpeg (default)
-        if (job.jpegQuality && (job.imageFormat ?? "jpeg") === "jpeg") {
-          body.jpegQuality = job.jpegQuality;
-        }
-        // x264Preset only for h264 codecs
-        if (job.x264Preset && ["h264", "h264-mkv", "h264-ts"].includes(codec)) {
-          body.x264Preset = job.x264Preset;
-        }
-        // gif-only params
-        if (codec === "gif") {
-          if (job.everyNthFrame !== 1) body.everyNthFrame = job.everyNthFrame;
-          if (job.numberOfGifLoops !== null) body.numberOfGifLoops = job.numberOfGifLoops;
-        }
-        // proResProfile only for prores codec
-        if (job.proResProfile && codec === "prores") {
-          body.proResProfile = job.proResProfile;
-        }
-        if (job.pixelFormat !== "yuv420p") body.pixelFormat = job.pixelFormat;
-        if (job.colorSpace !== "default") body.colorSpace = job.colorSpace;
-        if (job.encodingMaxRate) body.encodingMaxRate = job.encodingMaxRate;
-        if (job.encodingBufferSize) body.encodingBufferSize = job.encodingBufferSize;
-        if (job.disallowParallelEncoding) body.disallowParallelEncoding = job.disallowParallelEncoding;
-        if (job.forSeamlessAacConcatenation) body.forSeamlessAacConcatenation = job.forSeamlessAacConcatenation;
-        if (job.startFrame > 0 || job.endFrame > 0) {
-          body.frameRange = [job.startFrame, job.endFrame];
-        }
-      }
-      if (job.concurrency > 1) body.concurrency = job.concurrency;
-    }
-
-    // Start the remote render
-    const startRes = await fetch(`${RENDER_SERVER_URL}/remotion-renders`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!startRes.ok) {
-      const errText = await startRes.text();
-      throw new Error(
-        `Render server returned ${startRes.status}: ${errText}`,
-      );
-    }
-
-    const startData = (await startRes.json()) as { jobId: string };
-    const remoteJobId = startData.jobId;
-
-    console.log(
-      `[studio] Remote render started: ${remoteJobId} for ${job.compositionId}`,
-    );
-
-    // Listen for cancellation via Remotion's cancelToken
-    // cancelSignal is a function that registers a callback, not an AbortSignal
-    let cancelled = false;
-    if (job.cancelToken?.cancelSignal) {
-      job.cancelToken.cancelSignal(() => {
-        cancelled = true;
-      });
-    }
-
-    // Poll for completion
-    let status = "pending";
-    while (status !== "completed" && status !== "failed") {
-      if (cancelled) {
-        // Attempt to cancel on remote server
-        try {
-          await fetch(`${RENDER_SERVER_URL}/remotion-renders/${remoteJobId}`, {
-            method: "DELETE",
-          });
-        } catch {
-          // Best effort
-        }
-        failJob(job, "Render cancelled by user");
-        processing = false;
-        processJobIfPossible();
-        return;
-      }
-
-      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
-
-      const pollRes = await fetch(
-        `${RENDER_SERVER_URL}/remotion-renders/${remoteJobId}`,
-      );
-      if (!pollRes.ok) {
-        const errText = await pollRes.text();
-        throw new Error(`Poll failed with ${pollRes.status}: ${errText}`);
-      }
-
-      const pollData = (await pollRes.json()) as {
-        status: string;
-        progress?: number;
-        outputUrl?: string;
-        error?: string;
-      };
-      status = pollData.status;
-
-      if (status === "failed") {
-        throw new Error(pollData.error ?? "Unknown render error");
-      }
-
-      // Update progress
-      if (status === "rendering" || status === "pending") {
-        const progressValue = pollData.progress ?? 0;
-        updateJob(job.id, (j) => {
-          if (j.status === "running" && j.progress) {
-            j.progress.value = progressValue;
-            j.progress.message = `Rendering... ${
-              Math.round(progressValue * 100)
-            }%`;
-          }
-        });
-      }
-
-      if (status === "completed" && pollData.outputUrl) {
-        // Download the result
-        updateJob(job.id, (j) => {
-          if (j.status === "running" && j.progress) {
-            j.progress.value = 0.95;
-            j.progress.message = "Downloading rendered video...";
-          }
-        });
-
-        let downloadUrl = pollData.outputUrl.startsWith("http")
-          ? pollData.outputUrl
-          : new URL(pollData.outputUrl, RENDER_SERVER_URL).toString();
-
-        // Fix localhost URLs
-        try {
-          const outputParsed = new URL(downloadUrl);
-          const serverParsed = new URL(RENDER_SERVER_URL);
-          if (
-            outputParsed.hostname === "localhost" ||
-            outputParsed.hostname === "127.0.0.1"
-          ) {
-            outputParsed.hostname = serverParsed.hostname;
-            outputParsed.port = serverParsed.port;
-            downloadUrl = outputParsed.toString();
-          }
-        } catch {
-          // ignore
-        }
-
-        const downloadRes = await fetch(downloadUrl);
-        if (!downloadRes.ok) {
-          throw new Error(
-            `Failed to download render output: ${downloadRes.status}`,
-          );
-        }
-
-        const fileData = new Uint8Array(await downloadRes.arrayBuffer());
-        const outDir = path.dirname(job.outName);
-        if (outDir) {
-          fs.mkdirSync(outDir, { recursive: true });
-        }
-        fs.writeFileSync(job.outName, fileData);
-
-        console.log(
-          `[studio] Render complete: ${job.outName} (${fileData.length} bytes)`,
-        );
-
-        // Mark done
-        Object.assign(job, {
-          status: "done",
-          progress: {
-            message: "Render complete",
-            value: 1,
-            rendering: null,
-            stitching: null,
-            downloads: [],
-            bundling: null,
-            browser: { progress: 1, doneIn: null, alreadyAvailable: true },
-            copyingState: { bytes: 0, doneIn: null },
-            artifactState: { received: [] },
-            logs: [],
-          },
-        });
-        await notifyClientsOfJobUpdate();
-      }
+      await renderSingleJob(job, inputProps, () => cancelled);
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -372,6 +235,285 @@ async function processJobIfPossible(): Promise<void> {
 
   processing = false;
   processJobIfPossible();
+}
+
+// ---------------------------------------------------------------------------
+// Render Helpers
+// ---------------------------------------------------------------------------
+
+/** Resolve a potentially relative or localhost output URL to an absolute download URL. */
+function resolveDownloadUrl(outputUrl: string): string {
+  let downloadUrl = outputUrl.startsWith("http")
+    ? outputUrl
+    : new URL(outputUrl, RENDER_SERVER_URL).toString();
+
+  try {
+    const outputParsed = new URL(downloadUrl);
+    const serverParsed = new URL(RENDER_SERVER_URL);
+    if (
+      outputParsed.hostname === "localhost" ||
+      outputParsed.hostname === "127.0.0.1"
+    ) {
+      outputParsed.hostname = serverParsed.hostname;
+      outputParsed.port = serverParsed.port;
+      downloadUrl = outputParsed.toString();
+    }
+  } catch {
+    // ignore
+  }
+  return downloadUrl;
+}
+
+/** Start a remote render job, poll until completion, and return the output URL. */
+async function startAndPollRender(
+  body: Record<string, unknown>,
+  isCancelled: () => boolean,
+  onProgress?: (progress: number) => void,
+): Promise<string> {
+  const startRes = await fetch(`${RENDER_SERVER_URL}/remotion-renders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!startRes.ok) {
+    const errText = await startRes.text();
+    throw new Error(`Render server returned ${startRes.status}: ${errText}`);
+  }
+
+  const startData = (await startRes.json()) as { jobId: string };
+  const remoteJobId = startData.jobId;
+
+  let status = "pending";
+  while (status !== "completed" && status !== "failed") {
+    if (isCancelled()) {
+      try {
+        await fetch(`${RENDER_SERVER_URL}/remotion-renders/${remoteJobId}`, {
+          method: "DELETE",
+        });
+      } catch {
+        // Best effort
+      }
+      throw new Error("Render cancelled by user");
+    }
+
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+
+    const pollRes = await fetch(
+      `${RENDER_SERVER_URL}/remotion-renders/${remoteJobId}`,
+    );
+    if (!pollRes.ok) {
+      const errText = await pollRes.text();
+      throw new Error(`Poll failed with ${pollRes.status}: ${errText}`);
+    }
+
+    const pollData = (await pollRes.json()) as {
+      status: string;
+      progress?: number;
+      outputUrl?: string;
+      error?: string;
+    };
+    status = pollData.status;
+
+    if (status === "failed") {
+      throw new Error(pollData.error ?? "Unknown render error");
+    }
+
+    if (
+      (status === "rendering" || status === "pending" || status === "in-progress") &&
+      onProgress
+    ) {
+      onProgress(pollData.progress ?? 0);
+    }
+
+    if (status === "completed" && pollData.outputUrl) {
+      return pollData.outputUrl;
+    }
+  }
+
+  throw new Error("Render ended without output URL");
+}
+
+/** Mark a Studio job as done and notify clients. */
+async function markJobDone(job: RenderJobWithCleanup): Promise<void> {
+  Object.assign(job, {
+    status: "done",
+    progress: {
+      message: "Render complete",
+      value: 1,
+      rendering: null,
+      stitching: null,
+      downloads: [],
+      bundling: null,
+      browser: { progress: 1, doneIn: null, alreadyAvailable: true },
+      copyingState: { bytes: 0, doneIn: null },
+      artifactState: { received: [] },
+      logs: [],
+    },
+  });
+  await notifyClientsOfJobUpdate();
+}
+
+/** Build common body params shared across render types. */
+function buildCommonBody(
+  job: RenderJobWithCleanup,
+  inputProps: Record<string, unknown>,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    serveUrl: getServeUrl(),
+    compositionId: job.compositionId,
+  };
+  if (Object.keys(inputProps).length > 0) body.inputProps = inputProps;
+  if (job.scale !== 1) body.scale = job.scale;
+  if (job.logLevel) body.logLevel = job.logLevel;
+  if (job.delayRenderTimeout !== 30000) body.timeoutInMilliseconds = job.delayRenderTimeout;
+  if (job.envVariables && Object.keys(job.envVariables).length > 0) {
+    body.envVariables = job.envVariables;
+  }
+  return body;
+}
+
+/** Render a single video or still job on the remote server. */
+async function renderSingleJob(
+  job: RenderJobWithCleanup,
+  inputProps: Record<string, unknown>,
+  isCancelled: () => boolean,
+): Promise<void> {
+  const body = buildCommonBody(job, inputProps);
+
+  if (job.type === "still") {
+    body.type = "still";
+    body.imageFormat = job.imageFormat;
+    if (job.frame !== 0) body.frame = job.frame;
+    if (job.imageFormat === "jpeg" && job.jpegQuality) body.jpegQuality = job.jpegQuality;
+  } else {
+    body.type = "video";
+    const codec = job.codec;
+    body.codec = codec;
+    if (job.audioCodec) body.audioCodec = job.audioCodec;
+    if (job.muted) body.muted = job.muted;
+    if (job.enforceAudioTrack) body.enforceAudioTrack = job.enforceAudioTrack;
+    if (job.crf) body.crf = job.crf;
+    if (job.videoBitrate) body.videoBitrate = job.videoBitrate;
+    if (job.audioBitrate) body.audioBitrate = job.audioBitrate;
+    if (job.jpegQuality && (job.imageFormat ?? "jpeg") === "jpeg") {
+      body.jpegQuality = job.jpegQuality;
+    }
+    if (job.x264Preset && ["h264", "h264-mkv", "h264-ts"].includes(codec)) {
+      body.x264Preset = job.x264Preset;
+    }
+    if (codec === "gif") {
+      if (job.everyNthFrame !== 1) body.everyNthFrame = job.everyNthFrame;
+      if (job.numberOfGifLoops !== null) body.numberOfGifLoops = job.numberOfGifLoops;
+    }
+    if (job.proResProfile && codec === "prores") {
+      body.proResProfile = job.proResProfile;
+    }
+    if (job.pixelFormat !== "yuv420p") body.pixelFormat = job.pixelFormat;
+    if (job.colorSpace !== "default") body.colorSpace = job.colorSpace;
+    if (job.encodingMaxRate) body.encodingMaxRate = job.encodingMaxRate;
+    if (job.encodingBufferSize) body.encodingBufferSize = job.encodingBufferSize;
+    if (job.disallowParallelEncoding) body.disallowParallelEncoding = job.disallowParallelEncoding;
+    if (job.forSeamlessAacConcatenation) body.forSeamlessAacConcatenation = job.forSeamlessAacConcatenation;
+    if (job.startFrame > 0 || job.endFrame > 0) {
+      body.frameRange = [job.startFrame, job.endFrame];
+    }
+    if (job.concurrency > 1) body.concurrency = job.concurrency;
+  }
+
+  console.log(
+    `[studio] Remote render started for ${job.compositionId}`,
+  );
+
+  const outputUrl = await startAndPollRender(body, isCancelled, (progress) => {
+    updateJob(job.id, (j) => {
+      if (j.status === "running" && j.progress) {
+        j.progress.value = progress;
+        j.progress.message = `Rendering... ${Math.round(progress * 100)}%`;
+      }
+    });
+  });
+
+  // Download result
+  updateJob(job.id, (j) => {
+    if (j.status === "running" && j.progress) {
+      j.progress.value = 0.95;
+      j.progress.message = "Downloading result...";
+    }
+  });
+
+  const downloadUrl = resolveDownloadUrl(outputUrl);
+  const downloadRes = await fetch(downloadUrl);
+  if (!downloadRes.ok) {
+    throw new Error(`Failed to download render output: ${downloadRes.status}`);
+  }
+
+  const fileData = new Uint8Array(await downloadRes.arrayBuffer());
+  const outDir = path.dirname(job.outName);
+  if (outDir) fs.mkdirSync(outDir, { recursive: true });
+  fs.writeFileSync(job.outName, fileData);
+
+  console.log(
+    `[studio] Render complete: ${job.outName} (${fileData.length} bytes)`,
+  );
+  await markJobDone(job);
+}
+
+/**
+ * Render an image sequence via the remote server's "image-sequence" type.
+ * The server uses renderFrames and returns a zip. We download and extract
+ * the zip into the job.outName directory.
+ */
+async function renderSequence(
+  job: RenderJobWithCleanup & { type: "sequence" },
+  inputProps: Record<string, unknown>,
+  isCancelled: () => boolean,
+): Promise<void> {
+  const body = buildCommonBody(job, inputProps);
+  body.type = "image-sequence";
+  body.videoImageFormat = job.imageFormat === "none" ? "png" : job.imageFormat;
+  if (job.jpegQuality && job.imageFormat === "jpeg") body.jpegQuality = job.jpegQuality;
+  if (job.startFrame > 0 || job.endFrame > 0) {
+    body.frameRange = [job.startFrame, job.endFrame];
+  }
+  if (job.concurrency > 1) body.concurrency = job.concurrency;
+
+  console.log(
+    `[studio] Rendering image sequence for ${job.compositionId} (frames ${job.startFrame}-${job.endFrame})`,
+  );
+
+  const outputUrl = await startAndPollRender(body, isCancelled, (progress) => {
+    updateJob(job.id, (j) => {
+      if (j.status === "running" && j.progress) {
+        j.progress.value = progress;
+        j.progress.message = `Rendering frames... ${Math.round(progress * 100)}%`;
+      }
+    });
+  });
+
+  // Download the zip
+  updateJob(job.id, (j) => {
+    if (j.status === "running" && j.progress) {
+      j.progress.value = 0.95;
+      j.progress.message = "Downloading image sequence...";
+    }
+  });
+
+  const downloadUrl = resolveDownloadUrl(outputUrl);
+  const downloadRes = await fetch(downloadUrl);
+  if (!downloadRes.ok) {
+    throw new Error(`Failed to download sequence zip: ${downloadRes.status}`);
+  }
+
+  // Extract zip contents to job.outName using Node.js zlib (no unzip binary needed)
+  const zipData = Buffer.from(await downloadRes.arrayBuffer());
+  fs.mkdirSync(job.outName, { recursive: true });
+  extractZip(zipData, job.outName);
+
+  console.log(
+    `[studio] Sequence complete: ${job.outName}`,
+  );
+  await markJobDone(job);
 }
 
 async function failJob(

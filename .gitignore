@@ -3,6 +3,6 @@ dist
 .DS_Store
 .env
 data/
-remotion/bundle/
 
 remotion/bundle
+remotion/out
