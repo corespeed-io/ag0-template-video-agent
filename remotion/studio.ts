@@ -9,7 +9,6 @@
 import path from "path";
 import fs from "fs";
 import os from "os";
-import zlib from "zlib";
 import { execSync } from "child_process";
 import { createRequire } from "module";
 import { StudioServerInternals } from "@remotion/studio-server";
@@ -56,69 +55,6 @@ function getNetworkIP(): string {
 function getServeUrl(): string {
   const honoPort = process.env.PORT || "8080";
   return `http://${getNetworkIP()}:${honoPort}/remotion-bundle/`;
-}
-
-// ---------------------------------------------------------------------------
-// Zip Extraction (pure Node.js, no external binary needed)
-// ---------------------------------------------------------------------------
-
-/** Extract a flat zip archive into outDir. Handles deflate and stored entries. */
-function extractZip(zipBuf: Buffer, outDir: string): void {
-  // End of Central Directory record is the last 22+ bytes
-  let eocdOffset = -1;
-  for (let i = zipBuf.length - 22; i >= 0; i--) {
-    if (zipBuf.readUInt32LE(i) === 0x06054b50) {
-      eocdOffset = i;
-      break;
-    }
-  }
-  if (eocdOffset === -1) throw new Error("Invalid zip: EOCD not found");
-
-  const cdOffset = zipBuf.readUInt32LE(eocdOffset + 16);
-  const cdEntries = zipBuf.readUInt16LE(eocdOffset + 10);
-  let pos = cdOffset;
-
-  for (let i = 0; i < cdEntries; i++) {
-    if (zipBuf.readUInt32LE(pos) !== 0x02014b50) {
-      throw new Error("Invalid zip: bad central directory entry");
-    }
-    const nameLen = zipBuf.readUInt16LE(pos + 28);
-    const extraLen = zipBuf.readUInt16LE(pos + 30);
-    const commentLen = zipBuf.readUInt16LE(pos + 32);
-    const localHeaderOffset = zipBuf.readUInt32LE(pos + 42);
-    const fileName = zipBuf.subarray(pos + 46, pos + 46 + nameLen).toString("utf-8");
-    pos += 46 + nameLen + extraLen + commentLen;
-
-    // Skip directories
-    if (fileName.endsWith("/")) continue;
-
-    // Read local file header to find data start
-    const lh = localHeaderOffset;
-    if (zipBuf.readUInt32LE(lh) !== 0x04034b50) {
-      throw new Error("Invalid zip: bad local file header");
-    }
-    const method = zipBuf.readUInt16LE(lh + 8);
-    const compSize = zipBuf.readUInt32LE(lh + 18);
-    const lhNameLen = zipBuf.readUInt16LE(lh + 26);
-    const lhExtraLen = zipBuf.readUInt16LE(lh + 28);
-    const dataStart = lh + 30 + lhNameLen + lhExtraLen;
-    const compressed = zipBuf.subarray(dataStart, dataStart + compSize);
-
-    let fileData: Buffer;
-    if (method === 0) {
-      // Stored
-      fileData = Buffer.from(compressed);
-    } else if (method === 8) {
-      // Deflate
-      fileData = zlib.inflateRawSync(compressed);
-    } else {
-      throw new Error(`Unsupported zip compression method: ${method}`);
-    }
-
-    // Use only the basename to avoid path traversal
-    const baseName = path.basename(fileName);
-    fs.writeFileSync(path.join(outDir, baseName), fileData);
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -505,10 +441,10 @@ async function renderSequence(
     throw new Error(`Failed to download sequence zip: ${downloadRes.status}`);
   }
 
-  // Extract zip contents to job.outName using Node.js zlib (no unzip binary needed)
-  const zipData = Buffer.from(await downloadRes.arrayBuffer());
-  fs.mkdirSync(job.outName, { recursive: true });
-  extractZip(zipData, job.outName);
+  // Save the zip file directly
+  const zipData = new Uint8Array(await downloadRes.arrayBuffer());
+  const zipPath = job.outName.endsWith(".zip") ? job.outName : `${job.outName}.zip`;
+  fs.writeFileSync(zipPath, zipData);
 
   console.log(
     `[studio] Sequence complete: ${job.outName}`,
