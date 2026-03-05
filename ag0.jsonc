@@ -12,6 +12,17 @@
 //   setup    (optional)  — shell commands that must succeed before process starts
 {
   "processes": {
+    // Install all dependencies sequentially before any dev server starts.
+    // Other processes use "dependsOn" to wait for this to complete.
+    "install": {
+      "command": "echo",
+      "args": ["Dependencies installed"],
+      "setup": [
+        "deno install --entrypoint /workspace/main.ts",
+        "cd /workspace/remotion && pnpm install",
+        "cd /workspace/ui && pnpm install"
+      ]
+    },
     // User backend server (Hono + Zypher Agent)
     "backend": {
       "command": "deno",
@@ -26,9 +37,7 @@
         "VITE_PORT": "5173",
         "REMOTION_PORT": "4321"
       },
-      "setup": [
-        "deno install --entrypoint /workspace/main.ts"
-      ]
+      "dependsOn": ["install"]
     },
     // Frontend dev server (Vite + React via pnpm)
     "frontend": {
@@ -40,9 +49,7 @@
       "env": {
         "VITE_REMOTION_URL": "/remotion/Main"
       },
-      "setup": [
-        "pnpm install"
-      ]
+      "dependsOn": ["install"]
     },
     // Remotion Studio — video composition editor (port 4321, embedded as iframe)
     // Renders are forwarded to the remote render server via custom queueMethods.
@@ -56,9 +63,7 @@
         "REMOTION_PORT": "4321",
         "RENDER_SERVER_URL": "https://browser-rendering.corespeed.io"
       },
-      "setup": [
-        "pnpm install"
-      ]
+      "dependsOn": ["install"]
     }
   }
 }
