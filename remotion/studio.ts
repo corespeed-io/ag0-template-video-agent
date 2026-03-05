@@ -358,7 +358,7 @@ function buildCommonBody(
   if (Object.keys(inputProps).length > 0) body.inputProps = inputProps;
   if (job.scale !== 1) body.scale = job.scale;
   if (job.logLevel) body.logLevel = job.logLevel;
-  if (job.delayRenderTimeout !== 30000) body.timeoutInMilliseconds = job.delayRenderTimeout;
+  if (job.delayRenderTimeout !== 120000) body.timeoutInMilliseconds = job.delayRenderTimeout;
   if (job.envVariables && Object.keys(job.envVariables).length > 0) {
     body.envVariables = job.envVariables;
   }
@@ -619,7 +619,7 @@ async function main(): Promise<void> {
       userAgent: null,
       everyNthFrame: 1,
       numberOfGifLoops: null,
-      delayRenderTimeout: 30000,
+      delayRenderTimeout: 120000,
       disableWebSecurity: false,
       openGlRenderer: null,
       ignoreCertificateErrors: false,
